@@ -15,8 +15,15 @@ int main()
 
     std::string input;
     std::getline(std::cin, input);
-    std::string err_msg = ": command not found\n";
 
+    // exiting from loop
+    if (input == "exit 0")
+    {
+      exit(0);
+    }
+
+
+    std::string err_msg = ": command not found\n";
     std::cout << input << err_msg;
   }
 }
