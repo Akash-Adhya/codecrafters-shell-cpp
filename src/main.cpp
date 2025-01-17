@@ -93,6 +93,6 @@ int main()
             cout << parameters << endl;
 
         else
-            cout << command << " " << err_msg << endl;
+            cout << command << err_msg << endl;
     }
 }
