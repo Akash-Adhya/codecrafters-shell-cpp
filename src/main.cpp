@@ -21,6 +21,9 @@ int main()
     {
       exit(0);
     }
+    else if(input == "echo"){
+      std::cout<<input<<std::endl;
+    }
 
 
     std::string err_msg = ": command not found\n";
