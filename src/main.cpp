@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <string>
 #include <algorithm>
 #include <cctype>
@@ -55,6 +56,8 @@ string partitionParameters(string input, int index)
 
 int main()
 {
+
+  vector<string> commands = {"type", "echo", "exit"};
   // Flush after every std::cout / std:cerr
   cout << unitbuf;
   cerr << unitbuf;
@@ -92,6 +95,16 @@ int main()
     // echo command
     if (command == "echo")
       cout << parameters << endl;
+
+    // type command
+    else if(command == "type"){
+      if(find(commands.begin(), commands.end(), parameters) != commands.end()){
+        cout<<parameters<<" is a shell builtin\n";
+      }
+      else{
+        cout<<parameters<<": not found\n";
+      }
+    }
 
     else
       cout << command << err_msg;
