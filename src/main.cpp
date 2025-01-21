@@ -12,117 +12,210 @@
 using namespace std;
 
 // Helper functions to trim strings
-inline void ltrim(string &s) {
-    s.erase(s.begin(), find_if(s.begin(), s.end(), [](unsigned char ch) {
-        return !isspace(ch);
-    }));
+inline void ltrim(string &s)
+{
+    s.erase(s.begin(), find_if(s.begin(), s.end(), [](unsigned char ch)
+                               { return !isspace(ch); }));
 }
 
-inline void rtrim(string &s) {
-    s.erase(find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !isspace(ch);
-    }).base(), s.end());
+inline void rtrim(string &s)
+{
+    s.erase(find_if(s.rbegin(), s.rend(), [](unsigned char ch)
+                    { return !isspace(ch); })
+                .base(),
+            s.end());
 }
 
-// Split a string into tokens by spaces
-vector<string> splitInput(const string &input) {
-    vector<string> tokens;
-    size_t start = 0, end;
-    while ((end = input.find(' ', start)) != string::npos) {
-        if (start != end) {
-            tokens.push_back(input.substr(start, end - start));
-        }
-        start = end + 1;
+// Partition the command from the input
+string partitionCommand(const string &input)
+{
+    string command = "";
+    int i = 0;
+
+    while (i < input.length() && input[i] != ' ')
+    {
+        command += input[i];
+        i++;
     }
-    if (start < input.size()) {
-        tokens.push_back(input.substr(start));
-    }
-    return tokens;
+
+    return command;
+}
+
+// Partition parameters from the input
+string partitionParameters(string input, int index)
+{
+    return input.substr(index);
 }
 
 // Function to check if a command is a built-in
-bool isBuiltin(const string &command, const vector<string> &builtins) {
+bool isBuiltin(const string &command, const vector<string> &builtins)
+{
     return find(builtins.begin(), builtins.end(), command) != builtins.end();
 }
 
-// Execute external commands using fork and execvp
-void executeExternal(const vector<string> &args) {
+// Search for an executable in the PATH
+string findExecutable(const string &command)
+{
+    char *path_env = getenv("PATH");
+    if (path_env == nullptr)
+        return "";
+
+    string path(path_env);
+    size_t pos = 0;
+
+    while ((pos = path.find(':')) != string::npos)
+    {
+        string dir = path.substr(0, pos);
+        path.erase(0, pos + 1);
+
+        string file_path = dir + "/" + command;
+        if (access(file_path.c_str(), R_OK | X_OK) == 0)
+        {
+            return file_path; // Return the first match found
+        }
+    }
+
+    // Check the remaining part of PATH
+    if (!path.empty())
+    {
+        string file_path = path + "/" + command;
+        if (access(file_path.c_str(), R_OK | X_OK) == 0)
+        {
+            return file_path; // Return the first match found
+        }
+    }
+
+    return ""; // No executable found
+}
+
+// Execute external commands
+void executeExternal(const vector<string> &args)
+{
     pid_t pid = fork();
 
-    if (pid == -1) {
+    if (pid == -1)
+    {
         cerr << "Error: failed to fork process\n";
         return;
     }
 
-    if (pid == 0) { // Child process
+    if (pid == 0) // Child process
+    {
         // Convert vector<string> to char* array for execvp
         vector<char *> c_args;
-        for (const string &arg : args) {
+        for (const string &arg : args)
+        {
             c_args.push_back(const_cast<char *>(arg.c_str()));
         }
         c_args.push_back(nullptr); // Null-terminate the array
 
-        if (execvp(c_args[0], c_args.data()) == -1) {
+        if (execvp(c_args[0], c_args.data()) == -1)
+        {
             perror("Error");
             exit(EXIT_FAILURE);
         }
-    } else { // Parent process
+    }
+    else // Parent process
+    {
         int status;
         waitpid(pid, &status, 0); // Wait for child to finish
     }
 }
 
-int main() {
+int main()
+{
     // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit", "cat"};
+    vector<string> builtins = {"type", "echo", "exit"};
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
     cerr << unitbuf;
 
-    while (true) {
+    while (true)
+    {
         cout << "$ ";
 
         string input;
         getline(cin, input);
 
         // Exiting the shell
-        if (input == "exit 0") {
+        if (input == "exit 0")
+        {
             exit(0);
         }
 
-        // Parse input into tokens
-        vector<string> args = splitInput(input);
-        if (args.empty()) {
-            continue;
+        // Capture command and parameters
+        string command = partitionCommand(input);
+        string parameters = partitionParameters(input, command.length());
+
+        ltrim(command);
+        rtrim(command);
+        ltrim(parameters);
+        rtrim(parameters);
+
+        // Split input into command and arguments
+        vector<string> args;
+        args.push_back(command);
+        size_t pos = 0;
+        while ((pos = parameters.find(' ')) != string::npos)
+        {
+            args.push_back(parameters.substr(0, pos));
+            parameters.erase(0, pos + 1);
+        }
+        if (!parameters.empty())
+        {
+            args.push_back(parameters);
         }
 
-        string command = args[0];
-
-        // Handle built-in `echo`
-        if (command == "echo") {
-            for (size_t i = 1; i < args.size(); ++i) {
-                cout << args[i] << (i < args.size() - 1 ? " " : "\n");
-            }
+        // Handle the `echo` command
+        if (command == "echo")
+        {
+            cout << parameters << endl;
         }
-        // Handle built-in `type`
-        else if (command == "type") {
-            if (args.size() < 2) {
+
+        // Handle the `type` command
+        else if (command == "type")
+        {
+            if (parameters.empty())
+            {
                 cerr << "type: missing argument\n";
                 continue;
             }
-            string target = args[1];
-            if (isBuiltin(target, builtins)) {
-                cout << target << " is a shell builtin\n";
-            } else if (target.find('/') != string::npos && access(target.c_str(), R_OK | X_OK) == 0) {
-                cout << target << " is " << target << "\n";
-            } else {
-                cerr << target << ": not found\n";
+
+            if (isBuiltin(parameters, builtins))
+            {
+                cout << parameters << " is a shell builtin\n";
+            }
+            else if (parameters.find('/') != string::npos && access(parameters.c_str(), R_OK | X_OK) == 0)
+            {
+                cout << parameters << " is " << parameters << "\n";
+            }
+            else
+            {
+                string execPath = findExecutable(parameters);
+                if (!execPath.empty())
+                {
+                    cout << parameters << " is " << execPath << "\n";
+                }
+                else
+                {
+                    cerr << parameters << ": not found\n";
+                }
             }
         }
-        // Handle external commands
-        else {
-            executeExternal(args);
+
+        // Handle unknown or external commands
+        else
+        {
+            string execPath = findExecutable(command);
+            if (!execPath.empty())
+            {
+                executeExternal(args);
+            }
+            else
+            {
+                cerr << command << ": command not found\n";
+            }
         }
     }
 }
