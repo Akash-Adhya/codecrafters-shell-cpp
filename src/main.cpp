@@ -157,14 +157,15 @@ int main()
         vector<string> args;
         args.push_back(command);
         size_t pos = 0;
-        while ((pos = parameters.find(' ')) != string::npos)
+        string temp = parameters;
+        while ((pos = temp.find(' ')) != string::npos)
         {
-            args.push_back(parameters.substr(0, pos));
-            parameters.erase(0, pos + 1);
+            args.push_back(temp.substr(0, pos));
+            temp.erase(0, pos + 1);
         }
-        if (!parameters.empty())
+        if (!temp.empty())
         {
-            args.push_back(parameters);
+            args.push_back(temp);
         }
 
         // Handle the `echo` command
