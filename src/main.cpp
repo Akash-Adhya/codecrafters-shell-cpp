@@ -187,7 +187,7 @@ int main()
         }
 
         //handle the `pwd` command
-        if (command == "pwd"){
+        else if (command == "pwd"){
             if(parameters.empty())
                 pwd();
             else{
