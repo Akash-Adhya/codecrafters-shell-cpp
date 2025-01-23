@@ -122,6 +122,17 @@ void executeExternal(const vector<string> &args)
     }
 }
 
+// Finding Present working directory 
+void pwd(){
+    char pwd[MAX_PATH];
+    if(getcwd(pwd, sizeof(pwd)) != NULL){
+        cout<<pwd<<endl;
+    }
+    else{
+        perror("getcwd() error");
+    }
+}
+
 int main()
 {
     // List of built-in commands
@@ -174,6 +185,15 @@ int main()
             cout << parameters << endl;
         }
 
+        //handle the `pwd` command
+        if (command == "pwd"){
+            if(parameters.empty())
+                pwd();
+            else{
+                cerr<<"pwd : No parameters required."<<endl;
+            }
+        }
+
         // Handle the `type` command
         else if (command == "type")
         {
@@ -219,4 +239,6 @@ int main()
             }
         }
     }
+
+    return 0;
 }
