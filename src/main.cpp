@@ -6,6 +6,7 @@
 #include <locale>
 #include <cstdlib>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
