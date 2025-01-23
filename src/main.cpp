@@ -125,7 +125,7 @@ void executeExternal(const vector<string> &args)
 
 // Finding Present working directory 
 void pwd(){
-    char pwd[MAX_PATH];
+    char pwd[PATH_MAX];
     if(getcwd(pwd, sizeof(pwd)) != NULL){
         cout<<pwd<<endl;
     }
