@@ -137,7 +137,7 @@ void pwd(){
 int main()
 {
     // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit"};
+    vector<string> builtins = {"type", "echo", "exit", "pwd"};
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
