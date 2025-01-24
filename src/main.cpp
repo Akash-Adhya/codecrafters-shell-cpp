@@ -3,7 +3,6 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
-#include <locale>
 #include <cstdlib>
 #include <unistd.h>
 #include <limits.h>
@@ -192,6 +191,15 @@ int main()
                 pwd();
             else{
                 cerr<<"pwd : No parameters required."<<endl;
+            }
+        }
+
+        // Handle the `cd` command
+        else if(command == "cd"){
+            if(chdir(parameters) == 0){
+            }
+            else{
+                cout<<command<<": "<<parameters<<": No such file or directory";
             }
         }
 
