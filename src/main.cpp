@@ -196,7 +196,8 @@ int main()
 
         // Handle the `cd` command
         else if(command == "cd"){
-            if(chdir(parameters) == 0){
+            const char *cstr = parameters.c_str();
+            if(chdir(cstr) == 0){
             }
             else{
                 cout<<command<<": "<<parameters<<": No such file or directory";
