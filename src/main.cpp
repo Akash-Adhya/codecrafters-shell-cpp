@@ -200,7 +200,7 @@ int main()
             if(chdir(cstr) == 0){
             }
             else{
-                cout<<command<<": "<<parameters<<": No such file or directory";
+                cout<<command<<": "<<parameters<<": No such file or directory"<<endl;
             }
         }
 
