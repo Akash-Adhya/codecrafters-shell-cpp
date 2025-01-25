@@ -122,13 +122,16 @@ void executeExternal(const vector<string> &args)
     }
 }
 
-// Finding Present working directory 
-void pwd(){
+// Finding Present working directory
+void pwd()
+{
     char pwd[PATH_MAX];
-    if(getcwd(pwd, sizeof(pwd)) != NULL){
-        cout<<pwd<<endl;
+    if (getcwd(pwd, sizeof(pwd)) != NULL)
+    {
+        cout << pwd << endl;
     }
-    else{
+    else
+    {
         perror("getcwd() error");
     }
 }
@@ -185,29 +188,37 @@ int main()
             cout << parameters << endl;
         }
 
-        //handle the `pwd` command
-        else if (command == "pwd"){
-            if(parameters.empty())
+        // handle the `pwd` command
+        else if (command == "pwd")
+        {
+            if (parameters.empty())
                 pwd();
-            else{
-                cerr<<"pwd : No parameters required."<<endl;
+            else
+            {
+                cerr << "pwd : No parameters required." << endl;
             }
         }
 
         // Handle the `cd` command
-        else if(command == "cd"){
+        else if (command == "cd")
+        {
             const char *cstr = parameters.c_str();
-            //change to home directory
-            if(parameters == "~"){
-                const char *HOMEPATH = getenv("HOME");
-                chdir(HOMEPATH);
+            // change to home directory
+            if (HOMEPATH && _chdir(HOMEPATH) == 0){
+                // Successfully changed to home directory
+            }
+            else {
+                // If home directory cannot be accessed
+                cout << command << ": " << parameters << ": Unable to access home directory" << endl;
             }
             // successfully done changing the current directory
-            else if(chdir(cstr) == 0){
+            else if (chdir(cstr) == 0)
+            {
             }
-            else{
+            else
+            {
                 // if there exists no such file or directory
-                cout<<command<<": "<<parameters<<": No such file or directory"<<endl;
+                cout << command << ": " << parameters << ": No such file or directory" << endl;
             }
         }
 
