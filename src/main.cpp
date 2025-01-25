@@ -183,8 +183,15 @@ int main()
         }
 
         // Handle the `echo` command
-        if (command == "echo")
-        {
+        if (command == "echo") {
+            int i = 0;
+            while (i < parameters.length()) {
+                if (parameters[i] == '\'' || parameters[i] == '\"') {
+                    parameters.erase(parameters.begin() + i);
+                    continue;
+                }
+                i++; 
+            }
             cout << parameters << endl;
         }
 
