@@ -205,7 +205,7 @@ int main()
             const char *cstr = parameters.c_str();
             // change to home directory
             if(parameters == "~"){
-                if (HOMEPATH && _chdir(HOMEPATH) == 0){
+                if (HOMEPATH && chdir(HOMEPATH) == 0){
                     // Successfully changed to home directory
                 }
                 else {
