@@ -246,6 +246,11 @@ int main()
             echo(parameters);
         }
 
+        // Handle the `cat` command
+        else if(command == "cat"){
+            system(c_str(parameters));
+        }
+
         // handle the `pwd` command
         else if (command == "pwd")
         {
