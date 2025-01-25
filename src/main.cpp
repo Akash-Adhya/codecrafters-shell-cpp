@@ -137,7 +137,7 @@ void pwd()
     }
 }
 
-// Process string command
+// Processing the strings
 string processQuotedSegments(const string& parameters) {
     stringstream ss(parameters);
     string token;
@@ -158,7 +158,7 @@ string processQuotedSegments(const string& parameters) {
             getline(ss, quotedPart, quoteChar); // Read until the closing quote
             currentSegment += quotedPart;      // Accumulate the quoted part
 
-            if (ss.peek() != quoteChar) {
+            if (ss.peek() == EOF || ss.peek() == ' ' || ss.peek() == '\n') {
                 inQuotes = false;              // Close the quoted section
                 result += currentSegment + " "; // Append the whole quoted segment
                 currentSegment.clear();
@@ -167,6 +167,11 @@ string processQuotedSegments(const string& parameters) {
             ss >> token;
             result += token + " "; // Append unquoted word
         }
+    }
+
+    if (inQuotes) {
+        // If the input ends without closing the quote
+        result += currentSegment + " ";
     }
 
     return result;
