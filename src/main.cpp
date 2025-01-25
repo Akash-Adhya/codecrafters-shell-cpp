@@ -137,7 +137,7 @@ void pwd()
 }
 
 // Echo command
-void echo(const string& parameters) {
+void echo(string parameters) {
     stringstream ss(parameters);
     string token;
 
