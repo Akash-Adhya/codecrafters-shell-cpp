@@ -197,7 +197,7 @@ int main()
         // Handle the `cd` command
         else if(command == "cd"){
             //change to home directory
-            if(parameters == "~"){
+            if(parameters == '~'){
                 char *HOMEPATH = getenv("HOME");
                 chdir(HOMEPATH);
             }
