@@ -138,19 +138,26 @@ void pwd()
 }
 
 // Echo command
-void echo(string parameters) {
+void echo(const string& parameters) {
     stringstream ss(parameters);
     string token;
+    bool wasQuoted = false;
 
-    while (ss >> std::ws) { // Skip leading whitespace
+    while (ss >> ws) { // Skip leading whitespace
         if (ss.peek() == '"' || ss.peek() == '\'') { // Check for quotes
             char quoteChar = ss.get(); // Consume the opening quote
             string quotedString;
             getline(ss, quotedString, quoteChar); // Read until the closing quote
-            cout << quotedString << " "; // Print the quoted string without quotes
+            if (wasQuoted) {
+                cout << quotedString; // Append without space if the last string was quoted
+            } else {
+                cout << quotedString << " "; // Otherwise, add a space
+            }
+            wasQuoted = true;
         } else {
             ss >> token; // Read unquoted word
             cout << token << " ";
+            wasQuoted = false;
         }
     }
 
