@@ -197,8 +197,8 @@ int main()
         // Handle the `cd` command
         else if(command == "cd"){
             //change to home directory
-            if(parameters == '~'){
-                char *HOMEPATH = getenv("HOME");
+            if(parameters == "~"){
+                const char *HOMEPATH = getenv("HOME");
                 chdir(HOMEPATH);
             }
             const char *cstr = parameters.c_str();
