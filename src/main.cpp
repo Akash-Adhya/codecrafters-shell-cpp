@@ -137,45 +137,57 @@ void pwd()
     }
 }
 
-// Processing the strings
+// Processing the Quotations
 string processQuotedSegments(const string& parameters) {
-    stringstream ss(parameters);
-    string token;
-    bool inQuotes = false;
-    char quoteChar = '\0';
-    string result;
-    string currentSegment;
+    string result="";
+    bool isContainQuote = false;
+    int  n = parameters.length();
 
-    while (ss >> std::ws) { // Skip leading whitespace
-        if (!inQuotes && (ss.peek() == '"' || ss.peek() == '\'')) {
-            quoteChar = ss.get(); // Consume the opening quote
-            inQuotes = true;
-            currentSegment.clear();
-        }
-
-        if (inQuotes) {
-            string quotedPart;
-            getline(ss, quotedPart, quoteChar); // Read until the closing quote
-            currentSegment += quotedPart;      // Accumulate the quoted part
-
-            if (ss.peek() == EOF || ss.peek() == ' ' || ss.peek() == '\n') {
-                inQuotes = false;              // Close the quoted section
-                result += currentSegment + " "; // Append the whole quoted segment
-                currentSegment.clear();
-            }
-        } else {
-            ss >> token;
-            result += token + " "; // Append unquoted word
+    for(char c : parameters){
+        if(c == '\'' || c == '"'){
+            isContainQuote = true; 
+            break;
         }
     }
 
-    if (inQuotes) {
-        // If the input ends without closing the quote
-        result += currentSegment + " ";
+    if(!isContainQuote){
+        stringstream ss(parameters);
+        string word;
+        while (ss >> word)
+        {
+            result += word+" ";
+        }
+        
+    }
+    else{
+        bool isQuoted = false;
+        string temp = "";
+        int i = 0;
+        while(i < n){
+            char c = parameters[i];
+
+             if (c == '\'' || c == '"') {
+                if (isQuoted) {
+                    result += temp;
+                    temp = "";
+                    isQuoted = false;
+                } else {
+                    isQuoted = true;
+                    temp = ""; 
+                }
+            } else if (isQuoted) {
+                temp += c;
+            } else {
+                result += c;
+            }
+
+            i++;
+        }
     }
 
     return result;
 }
+
 
 // Echo command
 void echo(const string& parameters) {
