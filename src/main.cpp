@@ -199,9 +199,7 @@ int main()
             //change to home directory
             if(parameters == "~"){
                 char *HOMEPATH = getenv("HOME");
-                if(chdir(HOMEPATH) == NULL){
-                    cout<<"The HOME environment variable is not set."<<endl;
-                }
+                chdir(HOMEPATH);
             }
             const char *cstr = parameters.c_str();
             // successfully done changing the current directory
