@@ -203,7 +203,7 @@ int main()
             }
             const char *cstr = parameters.c_str();
             // successfully done changing the current directory
-            if(chdir(cstr) == 0){
+            else if(chdir(cstr) == 0){
             }
             else{
                 // if there exists no such file or directory
