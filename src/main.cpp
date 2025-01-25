@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/types.h>
+#include <sstream>
 #include <sys/wait.h>
 
 using namespace std;
