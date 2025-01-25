@@ -160,7 +160,7 @@ string processQuotedSegments(const string& parameters) {
 
             if (ss.peek() == EOF || ss.peek() == ' ' || ss.peek() == '\n') {
                 inQuotes = false;              // Close the quoted section
-                result += currentSegment + " "; // Append the whole quoted segment
+                result += '"' + currentSegment + '"' + " "; // Append the whole quoted segment with quotes
                 currentSegment.clear();
             }
         } else {
@@ -171,7 +171,7 @@ string processQuotedSegments(const string& parameters) {
 
     if (inQuotes) {
         // If the input ends without closing the quote
-        result += currentSegment + " ";
+        result += '"' + currentSegment + '"' + " ";
     }
 
     return result;
