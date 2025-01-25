@@ -136,6 +136,26 @@ void pwd()
     }
 }
 
+// Echo command
+void echo(const string& parameters) {
+    stringstream ss(parameters);
+    string token;
+
+    while (ss >> std::ws) { // Skip leading whitespace
+        if (ss.peek() == '"' || ss.peek() == '\'') { // Check for quotes
+            char quoteChar = ss.get(); // Consume the opening quote
+            string quotedString;
+            getline(ss, quotedString, quoteChar); // Read until the closing quote
+            cout << quotedString << " "; // Print the quoted string without quotes
+        } else {
+            ss >> token; // Read unquoted word
+            cout << token << " ";
+        }
+    }
+
+    cout << endl; // Print a newline at the end
+}
+
 int main()
 {
     // List of built-in commands
@@ -184,15 +204,7 @@ int main()
 
         // Handle the `echo` command
         if (command == "echo") {
-            int i = 0;
-            while (i < parameters.length()) {
-                if (parameters[i] == '\'' || parameters[i] == '\"') {
-                    parameters.erase(parameters.begin() + i);
-                    continue;
-                }
-                i++; 
-            }
-            cout << parameters << endl;
+            echo(parameters);
         }
 
         // handle the `pwd` command
