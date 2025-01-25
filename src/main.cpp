@@ -196,10 +196,19 @@ int main()
 
         // Handle the `cd` command
         else if(command == "cd"){
+            //change to home directory
+            if(parameters == "~"){
+                char *HOMEPATH = getenv("HOME");
+                if(chdir(HOMEPATH) == NULL){
+                    cout<<"The HOME environment variable is not set."<<endl;
+                }
+            }
             const char *cstr = parameters.c_str();
+            // successfully done changing the current directory
             if(chdir(cstr) == 0){
             }
             else{
+                // if there exists no such file or directory
                 cout<<command<<": "<<parameters<<": No such file or directory"<<endl;
             }
         }
