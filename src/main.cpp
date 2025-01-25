@@ -248,7 +248,7 @@ int main()
 
         // Handle the `cat` command
         else if(command == "cat"){
-            system(c_str(parameters));
+            system(input.c_str());
         }
 
         // handle the `pwd` command
