@@ -137,31 +137,45 @@ void pwd()
     }
 }
 
-// Echo command
-void echo(const string& parameters) {
+// Process string command
+string processQuotedSegments(const string& parameters) {
     stringstream ss(parameters);
     string token;
-    bool wasQuoted = false;
+    bool inQuotes = false;
+    char quoteChar = '\0';
+    string result;
+    string currentSegment;
 
-    while (ss >> ws) { // Skip leading whitespace
-        if (ss.peek() == '"' || ss.peek() == '\'') { // Check for quotes
-            char quoteChar = ss.get(); // Consume the opening quote
-            string quotedString;
-            getline(ss, quotedString, quoteChar); // Read until the closing quote
-            if (wasQuoted) {
-                cout << quotedString; // Append without space if the last string was quoted
-            } else {
-                cout << quotedString << " "; // Otherwise, add a space
+    while (ss >> std::ws) { // Skip leading whitespace
+        if (!inQuotes && (ss.peek() == '"' || ss.peek() == '\'')) {
+            quoteChar = ss.get(); // Consume the opening quote
+            inQuotes = true;
+            currentSegment.clear();
+        }
+
+        if (inQuotes) {
+            string quotedPart;
+            getline(ss, quotedPart, quoteChar); // Read until the closing quote
+            currentSegment += quotedPart;      // Accumulate the quoted part
+
+            if (ss.peek() != quoteChar) {
+                inQuotes = false;              // Close the quoted section
+                result += currentSegment + " "; // Append the whole quoted segment
+                currentSegment.clear();
             }
-            wasQuoted = true;
         } else {
-            ss >> token; // Read unquoted word
-            cout << token << " ";
-            wasQuoted = false;
+            ss >> token;
+            result += token + " "; // Append unquoted word
         }
     }
 
-    cout << endl; // Print a newline at the end
+    return result;
+}
+
+// Echo command
+void echo(const string& parameters) {
+    string processed = processQuotedSegments(parameters);
+    cout << processed << endl; // Print the processed result
 }
 
 int main()
