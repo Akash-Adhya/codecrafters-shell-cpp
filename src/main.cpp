@@ -173,10 +173,9 @@ string processQuotedSegments(const string& parameters) {
 
 
 // Echo command
-void echo(const string& parameters) {
-    string params = parameters.substr(parameters.find(' ') + 1, parameters.size() - parameters.find(' ') + 1);
+void echo(string& params) {
     string processed = processQuotedSegments(params);
-    cout << processed << endl; // Print the processed result
+    cout << processed << endl;
 }
 
 int main()
@@ -204,6 +203,7 @@ int main()
         // Capture command and parameters
         string command = partitionCommand(input);
         string parameters = partitionParameters(input, command.length());
+        string params = input.substr(input.find(' ') + 1, input.size() - input.find(' ') + 1);
 
         ltrim(command);
         rtrim(command);
@@ -227,7 +227,7 @@ int main()
 
         // Handle the `echo` command
         if (command == "echo") {
-            echo(input);
+            echo(params);
         }
 
         // Handle the `cat` command
