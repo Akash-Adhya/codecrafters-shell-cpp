@@ -139,53 +139,35 @@ void pwd()
 
 // Processing the Quotations
 string processQuotedSegments(const string& parameters) {
-    string result="";
-    bool isContainQuote = false;
-    int  n = parameters.length();
-
-    for(char c : parameters){
-        if(c == '\'' || c == '"'){
-            isContainQuote = true; 
-            break;
-        }
+    string result = "";
+    if ((parameters.at(0) == '\'') && (parameters.at(parameters.size() - 1) == '\''))
+    {
+        result = parameters.substr(1, parameters.size() - 1);
+        result = result.substr(0, result.size() - 1);
     }
-
-    if(!isContainQuote){
-        stringstream ss(parameters);
-        string word;
-        while (ss >> word)
+    else
+    {
+        bool space_found = false;
+        bool apos_start = false;
+        for (auto c : parameters)
         {
-            result += word+" ";
-        }
-        
-    }
-    else{
-        bool isQuoted = false;
-        string temp = "";
-        int i = 0;
-        while(i < n){
-            char c = parameters[i];
-
-             if (c == '\'' || c == '"') {
-                if (isQuoted) {
-                    if(i + 1 <parameters.length() && parameters[i+1] == '"') result += temp;
-                    else result += temp + " ";
-                    temp = "";
-                    isQuoted = false;
-                } else {
-                    isQuoted = true;
-                    temp = ""; 
-                }
-            } else if (isQuoted) {
-                temp += c;
-            } else if(!isQuoted && c != ' '){
-                result += c;
+            if (c == ' ' && !apos_start) // For any spaces not enclosed by apostrophes
+            {
+                if (!space_found)
+                    space_found = true;
+                else
+                    continue; // More spaces -> ignore them
             }
-
-            i++;
+            else if (space_found)
+                space_found = false; // No more spaces to handle
+            if (c == '\"')
+            {
+                apos_start = !apos_start;
+                continue;
+            }
+            result += c;
         }
     }
-
     return result;
 }
 
