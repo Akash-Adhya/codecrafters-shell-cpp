@@ -27,25 +27,61 @@ inline void rtrim(string &s)
             s.end());
 }
 
-// Partition the command from the input
-string partitionCommand(const string &input)
+// Function to split input into arguments while respecting quotes
+vector<string> splitInput(const string &input)
 {
-    string command = "";
-    int i = 0;
+    vector<string> args;
+    string arg;
+    bool inQuotes = false;
+    char quoteChar = '\0';
 
-    while (i < input.length() && input[i] != ' ')
+    for (size_t i = 0; i < input.length(); ++i)
     {
-        command += input[i];
-        i++;
+        char ch = input[i];
+
+        if (inQuotes)
+        {
+            if (ch == quoteChar)
+            {
+                inQuotes = false;
+            }
+            else if (ch == '\\' && i + 1 < input.length() && (input[i + 1] == '"' || input[i + 1] == '\\' || input[i + 1] == '$'))
+            {
+                arg += input[++i]; // Handle escape sequences
+            }
+            else
+            {
+                arg += ch;
+            }
+        }
+        else
+        {
+            if (isspace(ch))
+            {
+                if (!arg.empty())
+                {
+                    args.push_back(arg);
+                    arg.clear();
+                }
+            }
+            else if (ch == '"')
+            {
+                inQuotes = true;
+                quoteChar = '"';
+            }
+            else
+            {
+                arg += ch;
+            }
+        }
     }
 
-    return command;
-}
+    if (!arg.empty())
+    {
+        args.push_back(arg);
+    }
 
-// Partition parameters from the input
-string partitionParameters(string input, int index)
-{
-    return input.substr(index);
+    return args;
 }
 
 // Function to check if a command is a built-in
@@ -137,51 +173,22 @@ void pwd()
     }
 }
 
-// Processing the Quotations
-string processQuotedSegments(const string& parameters) {
-    string result = "";
-    // if ((parameters.at(0) == '\'') && (parameters.at(parameters.size() - 1) == '\''))
-    // {
-    //     result = parameters.substr(1, parameters.size() - 1);
-    //     result = result.substr(0, result.size() - 1);
-    // }
-    // else
-    // {
-        bool space_found = false;
-        bool apos_start = false;
-        for (auto c : parameters)
-        {
-            if (c == ' ' && !apos_start) // For any spaces not enclosed by apostrophes
-            {
-                if (!space_found)
-                    space_found = true;
-                else
-                    continue; // More spaces -> ignore them
-            }
-            else if (space_found)
-                space_found = false; // No more spaces to handle
-            if (c == '\"')
-            {
-                apos_start = !apos_start;
-                continue;
-            }
-            result += c;
-        }
-    // }
-    return result;
-}
-
-
 // Echo command
-void echo(string& params) {
-    string processed = processQuotedSegments(params);
-    cout << processed << endl;
+void echo(const vector<string> &args)
+{
+    for (size_t i = 1; i < args.size(); ++i)
+    {
+        if (i > 1)
+            cout << " ";
+        cout << args[i];
+    }
+    cout << endl;
 }
 
 int main()
 {
     // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd", "cat", };
+    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd", "cat"};
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
@@ -200,103 +207,84 @@ int main()
             exit(0);
         }
 
-        // Capture command and parameters
-        string command = partitionCommand(input);
-        string parameters = partitionParameters(input, command.length());
-        string params = input.substr(input.find(' ') + 1, input.size() - input.find(' ') + 1);
+        // Parse the input into arguments
+        vector<string> args = splitInput(input);
+        if (args.empty())
+            continue;
 
-        ltrim(command);
-        rtrim(command);
-        ltrim(parameters);
-        rtrim(parameters);
-
-        // Split input into command and arguments
-        vector<string> args;
-        args.push_back(command);
-        size_t pos = 0;
-        string temp = parameters;
-        while ((pos = temp.find(' ')) != string::npos)
-        {
-            args.push_back(temp.substr(0, pos));
-            temp.erase(0, pos + 1);
-        }
-        if (!temp.empty())
-        {
-            args.push_back(temp);
-        }
+        string command = args[0];
 
         // Handle the `echo` command
-        if (command == "echo") {
-            echo(params);
+        if (command == "echo")
+        {
+            echo(args);
         }
 
         // Handle the `cat` command
-        else if(command == "cat"){
-            system(input.c_str());
+        else if (command == "cat")
+        {
+            executeExternal(args);
         }
 
-        // handle the `pwd` command
+        // Handle the `pwd` command
         else if (command == "pwd")
         {
-            if (parameters.empty())
+            if (args.size() == 1)
                 pwd();
             else
             {
-                cerr << "pwd : No parameters required." << endl;
+                cerr << "pwd: No parameters required." << endl;
             }
         }
 
         // Handle the `cd` command
         else if (command == "cd")
         {
-            const char *cstr = parameters.c_str();
-            // change to home directory
-            if(parameters == "~"){
+            if (args.size() == 1 || args[1] == "~")
+            {
                 const char *HOMEPATH = getenv("HOME");
-                if (HOMEPATH && chdir(HOMEPATH) == 0){
+                if (HOMEPATH && chdir(HOMEPATH) == 0)
+                {
                     // Successfully changed to home directory
                 }
-                else {
-                    // If home directory cannot be accessed
-                    cout << command << ": " << parameters << ": Unable to access home directory" << endl;
+                else
+                {
+                    cerr << command << ": Unable to access home directory" << endl;
                 }
             }
-            else if (chdir(cstr) == 0) {
-                // successfully done changing the current directory
-            }
-            else {
-                // if there exists no such file or directory
-                cout << command << ": " << parameters << ": No such file or directory" << endl;
+            else if (chdir(args[1].c_str()) != 0)
+            {
+                cerr << command << ": " << args[1] << ": No such file or directory" << endl;
             }
         }
 
         // Handle the `type` command
         else if (command == "type")
         {
-            if (parameters.empty())
+            if (args.size() == 1)
             {
                 cerr << "type: missing argument\n";
                 continue;
             }
 
-            if (isBuiltin(parameters, builtins))
+            if (isBuiltin(args[1], builtins))
             {
-                cout << parameters << " is a shell builtin\n";
+                cout << args[1] << " is a shell builtin\n";
             }
-            else if (parameters.find('/') != string::npos && access(parameters.c_str(), R_OK | X_OK) == 0)
+            else if (args[1].find('/') != string::npos && access(args[1].c_str(), R_OK | X_OK) == 0)
             {
-                cout << parameters << " is " << parameters << "\n";
+                cout << args[1] << " is " << args[1] << "\n";
             }
             else
             {
-                string execPath = findExecutable(parameters);
+                string execPath = findExecutable(args[1]);
                 if (!execPath.empty())
                 {
-                    cout << parameters << " is " << execPath << "\n";
+                    cout << args[1] << " is " << execPath << "\n";
                 }
                 else
                 {
-                    cerr << parameters << ": not found\n";
+                    cerr << args[1] << ": not found\n";
                 }
             }
         }
