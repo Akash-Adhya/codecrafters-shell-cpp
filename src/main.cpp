@@ -57,7 +57,7 @@ vector<string> splitInput(const string &input)
         }
         else if (inSingleQuotes)
         {
-            if (ch == ''')
+            if (ch == '\'')
             {
                 inSingleQuotes = false;
             }
@@ -81,7 +81,7 @@ vector<string> splitInput(const string &input)
                 inQuotes = true;
                 quoteChar = '"';
             }
-            else if (ch == ''')
+            else if (ch == '\'')
             {
                 inSingleQuotes = true;
             }
