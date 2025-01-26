@@ -168,8 +168,8 @@ string processQuotedSegments(const string& parameters) {
 
              if (c == '\'' || c == '"') {
                 if (isQuoted) {
-                    if(i + 1 <parameters.length() && parameters[i+1] == '"') result += temp + " ";
-                    else result += temp;
+                    if(i + 1 <parameters.length() && parameters[i+1] == '"') result += temp;
+                    else result += temp + " ";
                     temp = "";
                     isQuoted = false;
                 } else {
