@@ -174,7 +174,8 @@ string processQuotedSegments(const string& parameters) {
 
 // Echo command
 void echo(const string& parameters) {
-    string processed = processQuotedSegments(parameters);
+    string params = parameters.substr(parameters.find(' ') + 1, parameters.size() - parameters.find(' ') + 1);
+    string processed = processQuotedSegments(params);
     cout << processed << endl; // Print the processed result
 }
 
