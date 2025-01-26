@@ -139,49 +139,50 @@ void pwd()
 
 // Processing the Quotations
 string processQuotedSegments(const string& parameters) {
-    string result;
-    string token;
-    bool inSingleQuote = false;
-    bool inDoubleQuote = false;
-    ostringstream buffer;
+    string result="";
+    bool isContainQuote = false;
+    int  n = parameters.length();
 
-    for (size_t i = 0; i < parameters.length(); ++i) {
-        char c = parameters[i];
-
-        if (c == '\\' && inDoubleQuote && i + 1 < parameters.length() &&
-            (parameters[i + 1] == '\\' || parameters[i + 1] == '"' || parameters[i + 1] == '$' || parameters[i + 1] == '\n')) {
-            // Handle escape sequences inside double quotes
-            buffer << parameters[++i];
-        } else if (c == '\\' && inDoubleQuote) {
-            buffer << c;
-        } else if (c == '\'' && !inDoubleQuote) {
-            inSingleQuote = !inSingleQuote;
-            buffer << c;
-        } else if (c == '"' && !inSingleQuote) {
-            inDoubleQuote = !inDoubleQuote;
-            buffer << c;
-        } else if (!inSingleQuote && !inDoubleQuote && (c == ' ' || c == '\t')) {
-            // Handle spaces outside quotes
-            if (!buffer.str().empty()) {
-                if (!result.empty()) {
-                    result += " ";
-                }
-                result += buffer.str();
-                buffer.str("");
-                buffer.clear();
-            }
-        } else {
-            // Append character to the buffer
-            buffer << c;
+    for(char c : parameters){
+        if(c == '\'' || c == '"'){
+            isContainQuote = true; 
+            break;
         }
     }
 
-    // Append the last token in the buffer
-    if (!buffer.str().empty()) {
-        if (!result.empty()) {
-            result += " ";
+    if(!isContainQuote){
+        stringstream ss(parameters);
+        string word;
+        while (ss >> word)
+        {
+            result += word+" ";
         }
-        result += buffer.str();
+        
+    }
+    else{
+        bool isQuoted = false;
+        string temp = "";
+        int i = 0;
+        while(i < n){
+            char c = parameters[i];
+
+             if (c == '\'' || c == '"') {
+                if (isQuoted) {
+                    result += temp;
+                    temp = "";
+                    isQuoted = false;
+                } else {
+                    isQuoted = true;
+                    temp = ""; 
+                }
+            } else if (isQuoted) {
+                temp += c;
+            } else {
+                result += c;
+            }
+
+            i++;
+        }
     }
 
     return result;
