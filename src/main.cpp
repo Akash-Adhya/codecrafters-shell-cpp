@@ -177,10 +177,8 @@ string processQuotedSegments(const string& parameters) {
                 }
             } else if (isQuoted) {
                 temp += c;
-            } else if(!isQuoted && c == ' '){
-                continue;
-            } else{
-                result += c;
+            } else if(!isQuoted && c != ' '){
+                result += c;;
             }
 
             i++;
