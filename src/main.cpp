@@ -139,50 +139,49 @@ void pwd()
 
 // Processing the Quotations
 string processQuotedSegments(const string& parameters) {
-    string result="";
-    bool isContainQuote = false;
-    int  n = parameters.length();
+    string result;
+    string token;
+    bool inSingleQuote = false;
+    bool inDoubleQuote = false;
+    ostringstream buffer;
 
-    for(char c : parameters){
-        if(c == '\'' || c == '"'){
-            isContainQuote = true; 
-            break;
-        }
-    }
+    for (size_t i = 0; i < input.length(); ++i) {
+        char c = input[i];
 
-    if(!isContainQuote){
-        stringstream ss(parameters);
-        string word;
-        while (ss >> word)
-        {
-            result += word+" ";
-        }
-        
-    }
-    else{
-        bool isQuoted = false;
-        string temp = "";
-        int i = 0;
-        while(i < n){
-            char c = parameters[i];
-
-             if (c == '\'' || c == '"') {
-                if (isQuoted) {
-                    result += temp;
-                    temp = "";
-                    isQuoted = false;
-                } else {
-                    isQuoted = true;
-                    temp = ""; 
+        if (c == '\\' && inDoubleQuote && i + 1 < input.length() &&
+            (input[i + 1] == '\\' || input[i + 1] == '"' || input[i + 1] == '$' || input[i + 1] == '\n')) {
+            // Handle escape sequences inside double quotes
+            buffer << input[++i];
+        } else if (c == '\\' && inDoubleQuote) {
+            buffer << c;
+        } else if (c == '\'' && !inDoubleQuote) {
+            inSingleQuote = !inSingleQuote;
+            buffer << c;
+        } else if (c == '"' && !inSingleQuote) {
+            inDoubleQuote = !inDoubleQuote;
+            buffer << c;
+        } else if (!inSingleQuote && !inDoubleQuote && (c == ' ' || c == '\t')) {
+            // Handle spaces outside quotes
+            if (!buffer.str().empty()) {
+                if (!result.empty()) {
+                    result += " ";
                 }
-            } else if (isQuoted) {
-                temp += c;
-            } else {
-                result += c;
+                result += buffer.str();
+                buffer.str("");
+                buffer.clear();
             }
-
-            i++;
+        } else {
+            // Append character to the buffer
+            buffer << c;
         }
+    }
+
+    // Append the last token in the buffer
+    if (!buffer.str().empty()) {
+        if (!result.empty()) {
+            result += " ";
+        }
+        result += buffer.str();
     }
 
     return result;
