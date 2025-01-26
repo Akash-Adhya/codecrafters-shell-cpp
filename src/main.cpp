@@ -140,13 +140,13 @@ void pwd()
 // Processing the Quotations
 string processQuotedSegments(const string& parameters) {
     string result = "";
-    if ((parameters.at(0) == '\'') && (parameters.at(parameters.size() - 1) == '\''))
-    {
-        result = parameters.substr(1, parameters.size() - 1);
-        result = result.substr(0, result.size() - 1);
-    }
-    else
-    {
+    // if ((parameters.at(0) == '\'') && (parameters.at(parameters.size() - 1) == '\''))
+    // {
+    //     result = parameters.substr(1, parameters.size() - 1);
+    //     result = result.substr(0, result.size() - 1);
+    // }
+    // else
+    // {
         bool space_found = false;
         bool apos_start = false;
         for (auto c : parameters)
@@ -167,7 +167,7 @@ string processQuotedSegments(const string& parameters) {
             }
             result += c;
         }
-    }
+    // }
     return result;
 }
 
