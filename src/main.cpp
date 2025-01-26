@@ -227,7 +227,7 @@ int main()
 
         // Handle the `echo` command
         if (command == "echo") {
-            echo(parameters);
+            echo(input);
         }
 
         // Handle the `cat` command
