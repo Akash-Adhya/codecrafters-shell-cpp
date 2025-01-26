@@ -204,7 +204,7 @@ void echo(const vector<string> &args)
 int main()
 {
     // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd", "cat"};
+    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd",};
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
