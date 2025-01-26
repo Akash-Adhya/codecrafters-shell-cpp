@@ -177,7 +177,9 @@ string processQuotedSegments(const string& parameters) {
                 }
             } else if (isQuoted) {
                 temp += c;
-            } else {
+            } else if(!isQuoted && c == ' '){
+                continue;
+            } else{
                 result += c;
             }
 
