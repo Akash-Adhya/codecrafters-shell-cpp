@@ -145,13 +145,13 @@ string processQuotedSegments(const string& parameters) {
     bool inDoubleQuote = false;
     ostringstream buffer;
 
-    for (size_t i = 0; i < input.length(); ++i) {
-        char c = input[i];
+    for (size_t i = 0; i < parameters.length(); ++i) {
+        char c = parameters[i];
 
-        if (c == '\\' && inDoubleQuote && i + 1 < input.length() &&
-            (input[i + 1] == '\\' || input[i + 1] == '"' || input[i + 1] == '$' || input[i + 1] == '\n')) {
+        if (c == '\\' && inDoubleQuote && i + 1 < parameters.length() &&
+            (parameters[i + 1] == '\\' || parameters[i + 1] == '"' || parameters[i + 1] == '$' || parameters[i + 1] == '\n')) {
             // Handle escape sequences inside double quotes
-            buffer << input[++i];
+            buffer << parameters[++i];
         } else if (c == '\\' && inDoubleQuote) {
             buffer << c;
         } else if (c == '\'' && !inDoubleQuote) {
