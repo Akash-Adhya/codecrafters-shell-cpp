@@ -42,9 +42,9 @@ vector<string> splitInput(const string &input)
 
         if (ch == '\\' && i + 1 < input.length())
         {
-            char next = input[++i];
+            char next = input[i+1];
             arg += next;
-            i++;
+            i+=2;
         }
         else if (inQuotes)
         {
