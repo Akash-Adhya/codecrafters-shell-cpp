@@ -41,9 +41,28 @@ vector<string> splitInput(const string &input)
         char ch = input[i];
 
         // Handle escape sequences
-        if (ch == '\\' && i + 1 < input.length())
+        if (ch == '\\')
         {
-            arg += input[++i]; // Add the next character literally
+            if (i + 1 < input.length())
+            {
+                char next = input[++i];
+                if ((inQuotes && (next == '"' || next == '\\')) || // Handle escapes in double quotes
+                    !inQuotes) // Handle escapes outside quotes
+                {
+                    arg += next;
+                }
+                else
+                {
+                    // Literal backslash followed by non-escaped character
+                    arg += '\\';
+                    arg += next;
+                }
+            }
+            else
+            {
+                // Lone backslash at the end of the input
+                arg += ch;
+            }
         }
         else if (inQuotes)
         {
