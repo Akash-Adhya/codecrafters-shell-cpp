@@ -85,6 +85,9 @@ vector<string> splitInput(const string &input)
             {
                 inSingleQuotes = true;
             }
+            else if(ch == '\\' && i+1 < input.length()){
+                arg += input[i+1];
+            }
             else
             {
                 arg += ch;
