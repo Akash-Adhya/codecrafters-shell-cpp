@@ -27,7 +27,7 @@ inline void rtrim(string &s)
             s.end());
 }
 
-// Function to split input into arguments while respecting quotes
+// Function to split the input into tokens
 vector<string> splitInput(const string &input)
 {
     vector<string> args;
@@ -40,21 +40,16 @@ vector<string> splitInput(const string &input)
     {
         char ch = input[i];
 
+        // Handle escape sequences
         if (ch == '\\' && i + 1 < input.length())
         {
-            char next = input[++i];
-            arg += next;
-            i++;
+            arg += input[++i]; // Add the next character literally
         }
         else if (inQuotes)
         {
             if (ch == quoteChar)
             {
                 inQuotes = false;
-            }
-            else if (ch == '\\' && i + 1 < input.length() && (input[i + 1] == '"' || input[i + 1] == '\\' || input[i + 1] == '$'))
-            {
-                arg += input[++i]; // Handle escape sequences
             }
             else
             {
@@ -105,6 +100,7 @@ vector<string> splitInput(const string &input)
 
     return args;
 }
+
 
 // Function to check if a command is a built-in
 bool isBuiltin(const string &command, const vector<string> &builtins)
