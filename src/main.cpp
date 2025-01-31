@@ -40,11 +40,31 @@ vector<string> splitInput(const string &input)
     {
         char ch = input[i];
 
-        if(ch == '\\' && i+1 < input.length()){
-            if(input[i+1] == 'n' || input[i+1] == 't' || input[i+1] == 'c'){
-                arg += "\\" + input[++i];
+        if (ch == '\\' && i + 1 < input.length())
+        {
+            char next = input[i + 1];
+            switch (next)
+            {
+            case 'n':
+                arg += '\n'; // Translate \n to newline
+                break;
+            case 't':
+                arg += '\t'; // Translate \t to tab
+                break;
+            case '\\':
+                arg += '\\'; // Translate \\ to backslash
+                break;
+            case '"':
+                arg += '"'; // Translate \" to double quote
+                break;
+            case '\'':
+                arg += '\''; // Translate \' to single quote
+                break;
+            default:
+                arg += next; // Add the literal character
+                break;
             }
-            else arg += input[++i];
+            i++; // Skip the next character since it's part of the escape sequence
         }
         else if (inQuotes)
         {
@@ -210,7 +230,13 @@ void echo(const vector<string> &args)
 int main()
 {
     // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd",};
+    vector<string> builtins = {
+        "type",
+        "echo",
+        "exit",
+        "pwd",
+        "cd",
+    };
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
