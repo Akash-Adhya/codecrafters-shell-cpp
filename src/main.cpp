@@ -32,83 +32,52 @@ vector<string> splitInput(const string &input)
 {
     vector<string> args;
     string arg;
-    bool inQuotes = false;
+    bool inDoubleQuotes = false;
     bool inSingleQuotes = false;
-    char quoteChar = '\0';
 
     for (size_t i = 0; i < input.length(); ++i)
     {
         char ch = input[i];
 
-        // Handle escape sequences
-        if (ch == '\\')
+        if (ch == '\\' && !inSingleQuotes) // Handle escaping, but not in single quotes
         {
             if (i + 1 < input.length())
             {
                 char next = input[++i];
-                if ((inQuotes && (next == '"' || next == '\\')) || // Handle escapes in double quotes
-                    !inQuotes) // Handle escapes outside quotes
+                if (inDoubleQuotes && (next == '"' || next == '\\'))
                 {
-                    arg += next;
+                    arg += next; // Allow \" and \\ inside double quotes
                 }
                 else
                 {
-                    // Literal backslash followed by non-escaped character
-                    arg += '\\';
+                    arg += '\\'; // Keep the backslash
                     arg += next;
                 }
             }
             else
             {
-                // Lone backslash at the end of the input
-                arg += ch;
+                arg += ch; // Lone backslash
             }
         }
-        else if (inQuotes)
+        else if (ch == '"' && !inSingleQuotes)
         {
-            if (ch == quoteChar)
-            {
-                inQuotes = false;
-            }
-            else
-            {
-                arg += ch;
-            }
+            inDoubleQuotes = !inDoubleQuotes;
         }
-        else if (inSingleQuotes)
+        else if (ch == '\'' && !inDoubleQuotes)
         {
-            if (ch == '\'')
+            inSingleQuotes = !inSingleQuotes;
+        }
+        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes)
+        {
+            if (!arg.empty())
             {
-                inSingleQuotes = false;
-            }
-            else
-            {
-                arg += ch;
+                args.push_back(arg);
+                arg.clear();
             }
         }
         else
         {
-            if (isspace(ch))
-            {
-                if (!arg.empty())
-                {
-                    args.push_back(arg);
-                    arg.clear();
-                }
-            }
-            else if (ch == '"')
-            {
-                inQuotes = true;
-                quoteChar = '"';
-            }
-            else if (ch == '\'')
-            {
-                inSingleQuotes = true;
-            }
-            else
-            {
-                arg += ch;
-            }
+            arg += ch;
         }
     }
 
