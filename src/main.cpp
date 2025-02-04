@@ -39,18 +39,18 @@ vector<string> splitInput(const string &input)
     {
         char ch = input[i];
 
-        if (ch == '\\' && !inSingleQuotes) // Handle escaping, but not in single quotes
+        if (ch == '\\' && !inSingleQuotes) // Handle escaping outside of single quotes
         {
             if (i + 1 < input.length())
             {
                 char next = input[++i];
                 if (inDoubleQuotes && (next == '"' || next == '\\'))
                 {
-                    arg += next; // Allow \" and \\ inside double quotes
+                    arg += next; // Handle escaping inside double quotes
                 }
                 else
                 {
-                    arg += '\\'; // Keep the backslash
+                    arg += '\\'; // Keep the backslash as is
                     arg += next;
                 }
             }
@@ -59,15 +59,15 @@ vector<string> splitInput(const string &input)
                 arg += ch; // Lone backslash
             }
         }
-        else if (ch == '"' && !inSingleQuotes)
+        else if (ch == '"' && !inSingleQuotes) // Toggle double quotes
         {
             inDoubleQuotes = !inDoubleQuotes;
         }
-        else if (ch == '\'' && !inDoubleQuotes)
+        else if (ch == '\'' && !inDoubleQuotes) // Toggle single quotes
         {
             inSingleQuotes = !inSingleQuotes;
         }
-        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes)
+        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes) // Split arguments outside quotes
         {
             if (!arg.empty())
             {
@@ -75,15 +75,20 @@ vector<string> splitInput(const string &input)
                 arg.clear();
             }
         }
+        else if (inSingleQuotes && ch == '\\') // Special case: handle backslash inside single quotes
+        {
+            // Preserve the backslash literally within single quotes
+            arg += '\\';
+        }
         else
         {
-            arg += ch;
+            arg += ch; // Add the character as is
         }
     }
 
     if (!arg.empty())
     {
-        args.push_back(arg);
+        args.push_back(arg); // Add any remaining argument
     }
 
     return args;
