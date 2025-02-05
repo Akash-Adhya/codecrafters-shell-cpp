@@ -49,7 +49,7 @@ void close_open_files() {
     }
 }
 
-std::string read_arg(const std::string& string, const char* delim, size_t* rest, bool* quoted, QuoteMode* quote, bool* cont) {
+std::string _read_arg(const std::string& string, const char* delim, size_t* rest, bool* quoted, QuoteMode* quote, bool* cont) {
     *cont = false;
     std::string ret;
     const char* p = string.c_str() + *rest;
@@ -205,6 +205,47 @@ int run_program(const std::string& file_path, StringArray& args) {
     return -1;
 }
 
+std::string continue_arg(std::string existing, std::string string, const char* delim, size_t* rest, bool* quoted, QuoteMode* quote, bool* cont) {
+    assert(*cont);
+
+    size_t start_idx = *rest;
+    const char* start = string.c_str() + start_idx;
+
+    // Skip over delimiters if not quoted
+    if (*quote == QuoteMode::UNQUOTED) {
+        while (*start != '\0' && strchr(delim, *start) != nullptr) {
+            start++;
+        }
+    }
+
+    if (*start == '\0' || *start == '\n') {
+        // If end of string or newline, return the existing string
+        if (*quote == QuoteMode::UNQUOTED) return existing;
+
+        size_t existing_len = existing.length();
+        size_t arg_len = strlen(start);
+
+        assert(arg_len <= 1); // Expected a single line from fgets
+
+        // Append the current string to the existing one
+        existing += std::string(start, arg_len);
+        return existing;
+    }
+
+    // Read the next argument
+    std::string arg = _read_arg(start, delim, rest, quoted, quote, cont);
+
+    if (arg.empty()) return existing; // If no argument, return existing
+
+    size_t existing_len = existing.length();
+    size_t arg_len = arg.length();
+
+    // Append the argument to the existing string
+    existing += arg;
+
+    return existing;
+}
+
 int help_command(StringArray& args) {
     FILE* out = stdout;
     if (files.size() > STDOUT_FILENO && files[STDOUT_FILENO] != nullptr) {
@@ -260,7 +301,7 @@ int main(int argc, char** argv) {
         bool quoted;
         bool get_new_line = false;
 
-        while (!(arg = read_arg(input, delim, &rest, &quoted, &quote, &get_new_line)).empty()) {
+        while (!(arg = _read_arg(input, delim, &rest, &quoted, &quote, &get_new_line)).empty()) {
             while (get_new_line) {
                 assert(rest == 0 || input[rest] == '\0');
                 // FIXME read PS2
