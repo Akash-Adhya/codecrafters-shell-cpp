@@ -3,7 +3,6 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
-#include <cassert>
 #include <cstdlib>
 #include <unistd.h>
 #include <limits.h>
@@ -29,77 +28,71 @@ inline void rtrim(string &s)
 }
 
 // Function to split the input into tokens
-enum QuoteMode { UNQUOTED, SINGLE, DOUBLE };
-vector<string> splitInput(const string &input) {
-    vector<string> result;
-    string temp;
-    size_t i = 0;
-    bool quoted = false, cont = false;
-    QuoteMode quote = UNQUOTED;
+vector<string> splitInput(const string &input)
+{
+    vector<string> args;
+    string arg;
+    bool inDoubleQuotes = false;
+    bool inSingleQuotes = false;
 
-    while (i < input.size()) {
-        switch (input[i]) {
-            case '\\': {
-                if (quote == DOUBLE) {
-                    i++;
-                    if (i < input.size()) {
-                        if (input[i] == '\\' || input[i] == '$' || input[i] == '"' || input[i] == '\n') {
-                            temp += input[i];
-                        } else {
-                            temp += '\\';
-                            temp += input[i];
-                        }
-                    }
-                } else if (quote == SINGLE) {
-                    temp += '\\';  // Preserve backslashes literally in single quotes
-                } else {
-                    i++;
-                    if (i < input.size()) {
-                        if (input[i] == '\n' && i + 1 == input.size()) {
-                            cont = true;
-                        } else {
-                            temp += input[i];
-                        }
-                    }
+    for (size_t i = 0; i < input.length(); ++i)
+    {
+        char ch = input[i];
+
+        if (ch == '\\' && !inSingleQuotes) // Handle escaping outside of single quotes
+        {
+            if (i + 1 < input.length())
+            {
+                char next = input[++i];
+                if (inDoubleQuotes && (next == '"' || next == '\\'))
+                {
+                    arg += next; // Handle escaping inside double quotes
                 }
-                break;
-            }
-            case '"': {
-                if (quote == UNQUOTED) {
-                    quote = DOUBLE;
-                    quoted = true;
-                } else if (quote == SINGLE) {
-                    temp += '"';
-                } else if (quote == DOUBLE) {
-                    quote = UNQUOTED;
+                else
+                {
+                    arg += '\\'; // Keep the backslash as is
+                    arg += next;
                 }
-                break;
             }
-            case '\'': {
-                if (quote == UNQUOTED) {
-                    quote = SINGLE;
-                    quoted = true;
-                } else if (quote == SINGLE) {
-                    quote = UNQUOTED;
-                } else if (quote == DOUBLE) {
-                    temp += '\'';
-                }
-                break;
+            else
+            {
+                arg += ch; // Lone backslash
             }
-            default:
-                temp += input[i];  // Preserve all characters literally in single quotes
-                break;
         }
-        i++;
+        else if (ch == '"' && !inSingleQuotes) // Toggle double quotes
+        {
+            inDoubleQuotes = !inDoubleQuotes;
+        }
+        else if (ch == '\'' && !inDoubleQuotes) // Toggle single quotes
+        {
+            inSingleQuotes = !inSingleQuotes;
+        }
+        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes) // Split arguments outside quotes
+        {
+            if (!arg.empty())
+            {
+                args.push_back(arg);
+                arg.clear();
+            }
+        }
+        else if (inSingleQuotes && ch == '\\') // Special case: handle backslash inside single quotes
+        {
+            // Preserve the backslash literally within single quotes
+            arg += '\\';
+        }
+        else
+        {
+            arg += ch; // Add the character as is
+        }
     }
-    if (quote != UNQUOTED) {
-        assert(i == input.size());
-        cont = true;
-    }
-    if (!temp.empty()) result.push_back(temp);
-    return result;
-}
 
+    if (!arg.empty())
+    {
+        args.push_back(arg); // Add any remaining argument
+    }
+
+    return args;
+}
 
 
 // Function to check if a command is a built-in
