@@ -87,6 +87,7 @@ vector<string> splitInput(const string &input)
             }
             else if(ch == '\\' && i < input.length()-1){
                 arg += input[i+1];
+                i+=2;
             }
             else
             {
