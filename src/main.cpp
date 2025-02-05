@@ -3,6 +3,7 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <cassert>
 #include <cstdlib>
 #include <unistd.h>
 #include <limits.h>
@@ -28,37 +29,77 @@ inline void rtrim(string &s)
 }
 
 // Function to split the input into tokens
+enum QuoteMode { UNQUOTED, SINGLE, DOUBLE };
 vector<string> splitInput(const string &input) {
-    vector<string> tokens;
-    string token;
-    bool inSingleQuotes = false;
-    
-    for (size_t i = 0; i < input.length(); ++i) {
-        char c = input[i];
-        
-        if (c == '\\' && i + 1 < input.length() && input[i + 1] == '\\') {
-            token += '\\';
-            ++i; 
-        } else if (c == '\'' && !inSingleQuotes) {
-            inSingleQuotes = true;
-        } else if (c == '\'' && inSingleQuotes) {
-            inSingleQuotes = false;
-        } else if (c == ' ' && !inSingleQuotes) {
-            if (!token.empty()) {
-                tokens.push_back(token);
-                token.clear();
+    vector<string> result;
+    string temp;
+    size_t i = 0;
+    bool quoted = false, cont = false;
+    QuoteMode quote = UNQUOTED;
+
+    while (i < input.size()) {
+        switch (input[i]) {
+            case '\\': {
+                if (quote == DOUBLE) {
+                    i++;
+                    if (i < input.size()) {
+                        if (input[i] == '\\' || input[i] == '$' || input[i] == '"' || input[i] == '\n') {
+                            temp += input[i];
+                        } else {
+                            temp += '\\';
+                            temp += input[i];
+                        }
+                    }
+                } else if (quote == SINGLE) {
+                    temp += '\\';  // Preserve backslashes literally in single quotes
+                } else {
+                    i++;
+                    if (i < input.size()) {
+                        if (input[i] == '\n' && i + 1 == input.size()) {
+                            cont = true;
+                        } else {
+                            temp += input[i];
+                        }
+                    }
+                }
+                break;
             }
-        } else {
-            token += c;
+            case '"': {
+                if (quote == UNQUOTED) {
+                    quote = DOUBLE;
+                    quoted = true;
+                } else if (quote == SINGLE) {
+                    temp += '"';
+                } else if (quote == DOUBLE) {
+                    quote = UNQUOTED;
+                }
+                break;
+            }
+            case '\'': {
+                if (quote == UNQUOTED) {
+                    quote = SINGLE;
+                    quoted = true;
+                } else if (quote == SINGLE) {
+                    quote = UNQUOTED;
+                } else if (quote == DOUBLE) {
+                    temp += '\'';
+                }
+                break;
+            }
+            default:
+                temp += input[i];  // Preserve all characters literally in single quotes
+                break;
         }
+        i++;
     }
-    
-    if (!token.empty()) {
-        tokens.push_back(token);
+    if (quote != UNQUOTED) {
+        assert(i == input.size());
+        cont = true;
     }
-    
-    return tokens;
+    if (!temp.empty()) result.push_back(temp);
+    return result;
 }
+
 
 
 // Function to check if a command is a built-in
