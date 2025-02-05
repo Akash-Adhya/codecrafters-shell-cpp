@@ -210,57 +210,48 @@ int main() {
   while (true) {
     std::cout << "$ ";
     std::getline(std::cin, input);
-    word = "";
-    arguments.clear();
-    singleQuoted = false;
-    doubleQuoted = false;
-    escaped = false;
+    bool concatNext = false;  // Track if next word should be merged
+
     for (const char& c : input) {
-      if (false) {}
-      else if (escaped) {
-        if (doubleQuoted) {
-          if (c != '"' && c != '\\') word += '\\';
-        }
+      if (escaped) {
+        word += c;
         escaped = false;
       }
       else if (c == '\\' && !singleQuoted) {
-        if (!escaped) {
-          escaped = true;
-          continue;
-        }
+        escaped = true;
       }
       else if (c == ' ' && !singleQuoted && !doubleQuoted) {
-        if (word.size()) {  // Drop multiple spaces.
-          arguments.emplace_back(word);
+        if (!word.empty()) {
+          if (concatNext && !arguments.empty()) {
+            arguments.back() += word; // Merge with previous argument
+          } else {
+            arguments.emplace_back(word);
+          }
           word = "";
+          concatNext = false;
         }
-        continue;
       }
       else if (c == '\'' && !doubleQuoted) {
-        if (singleQuoted) {
-          arguments.emplace_back(word);
-          word = "";
-          singleQuoted = false;
-        }
-        else singleQuoted = true;
-        continue;
+        singleQuoted = !singleQuoted;
       }
       else if (c == '"' && !singleQuoted) {
         if (doubleQuoted) {
-          if (!escaped) {
-            arguments.emplace_back(word);
-            word = "";
-            doubleQuoted = false;
-            continue;
-          }
-          else escaped = false;
+          // Closing a double quote, check next char
+          concatNext = true;  // Mark for merging if next is another quote
         }
-        else {
-          doubleQuoted = true;
-          continue;
-        }
+        doubleQuoted = !doubleQuoted;
       }
-      word += c;
+      else {
+        word += c;
+      }
+    }
+
+    if (!word.empty()) {
+      if (concatNext && !arguments.empty()) {
+        arguments.back() += word;
+      } else {
+        arguments.emplace_back(word);
+      }
     }
     if (!word.empty()) arguments.emplace_back(word);
     if (arguments.empty()) continue;
