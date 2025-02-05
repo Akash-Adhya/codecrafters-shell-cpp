@@ -28,70 +28,36 @@ inline void rtrim(string &s)
 }
 
 // Function to split the input into tokens
-vector<string> splitInput(const string &input)
-{
-    vector<string> args;
-    string arg;
-    bool inDoubleQuotes = false;
+vector<string> splitInput(const string &input) {
+    vector<string> tokens;
+    string token;
     bool inSingleQuotes = false;
-
-    for (size_t i = 0; i < input.length(); ++i)
-    {
-        char ch = input[i];
-
-        if (ch == '\\' && !inSingleQuotes) // Handle escaping outside of single quotes
-        {
-            if (i + 1 < input.length())
-            {
-                char next = input[++i];
-                if (inDoubleQuotes && (next == '"' || next == '\\'))
-                {
-                    arg += next; // Handle escaping inside double quotes
-                }
-                else
-                {
-                    arg += '\\'; // Keep the backslash as is
-                    arg += next;
-                }
+    
+    for (size_t i = 0; i < input.length(); ++i) {
+        char c = input[i];
+        
+        if (c == '\' && i + 1 < input.length() && input[i + 1] == '\') {
+            token += '\\';
+            ++i; 
+        } else if (c == '\'' && !inSingleQuotes) {
+            inSingleQuotes = true;
+        } else if (c == '\'' && inSingleQuotes) {
+            inSingleQuotes = false;
+        } else if (c == ' ' && !inSingleQuotes) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+                token.clear();
             }
-            else
-            {
-                arg += ch; // Lone backslash
-            }
-        }
-        else if (ch == '"' && !inSingleQuotes) // Toggle double quotes
-        {
-            inDoubleQuotes = !inDoubleQuotes;
-        }
-        else if (ch == '\'' && !inDoubleQuotes) // Toggle single quotes
-        {
-            inSingleQuotes = !inSingleQuotes;
-        }
-        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes) // Split arguments outside quotes
-        {
-            if (!arg.empty())
-            {
-                args.push_back(arg);
-                arg.clear();
-            }
-        }
-        else if (inSingleQuotes && ch == '\\') // Special case: handle backslash inside single quotes
-        {
-            // Preserve the backslash literally within single quotes
-            arg += '\\';
-        }
-        else
-        {
-            arg += ch; // Add the character as is
+        } else {
+            token += c;
         }
     }
-
-    if (!arg.empty())
-    {
-        args.push_back(arg); // Add any remaining argument
+    
+    if (!token.empty()) {
+        tokens.push_back(token);
     }
-
-    return args;
+    
+    return tokens;
 }
 
 
