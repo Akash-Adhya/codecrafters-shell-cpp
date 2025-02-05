@@ -203,15 +203,19 @@ int main() {
   std::cerr << std::unitbuf;
   std::string input;
   std::vector<std::string> arguments;
-  std::string word;
-  bool singleQuoted;
-  bool doubleQuoted;
-  bool escaped;
+  
   while (true) {
     std::cout << "$ ";
     std::getline(std::cin, input);
-    bool concatNext = false;  // Track if next word should be merged
-
+    
+    // Reset parsing variables for each new input line.
+    arguments.clear();
+    std::string word;
+    bool singleQuoted = false;
+    bool doubleQuoted = false;
+    bool escaped = false;
+    bool concatNext = false;  // New flag for merging adjacent quoted strings
+    
     for (const char& c : input) {
       if (escaped) {
         word += c;
@@ -227,7 +231,7 @@ int main() {
           } else {
             arguments.emplace_back(word);
           }
-          word = "";
+          word.clear();
           concatNext = false;
         }
       }
@@ -236,16 +240,19 @@ int main() {
       }
       else if (c == '"' && !singleQuoted) {
         if (doubleQuoted) {
-          // Closing a double quote, check next char
-          concatNext = true;  // Mark for merging if next is another quote
+          // Closing a double quote, mark for concatenation.
+          concatNext = true;
+          doubleQuoted = false;
+        } else {
+          doubleQuoted = true;
         }
-        doubleQuoted = !doubleQuoted;
       }
       else {
         word += c;
       }
     }
-
+    
+    // If there's a remaining word, add or merge it.
     if (!word.empty()) {
       if (concatNext && !arguments.empty()) {
         arguments.back() += word;
@@ -253,9 +260,11 @@ int main() {
         arguments.emplace_back(word);
       }
     }
-    if (!word.empty()) arguments.emplace_back(word);
+    
     if (arguments.empty()) continue;
-    else if (arguments[0] == "exit") {
+    
+    // Process commands as before.
+    if (arguments[0] == "exit") {
       switch (arguments.size()) {
         case 1: return 0;
         case 2: return toInt(arguments[1]);
