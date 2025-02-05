@@ -32,63 +32,89 @@ vector<string> splitInput(const string &input)
 {
     vector<string> args;
     string arg;
-    bool inDoubleQuotes = false;
+    bool inQuotes = false;
     bool inSingleQuotes = false;
+    char quoteChar = '\0';
 
     for (size_t i = 0; i < input.length(); ++i)
     {
         char ch = input[i];
 
-        if (ch == '\\' && !inSingleQuotes) // Handle escaping outside of single quotes
+        // Handle escape sequences
+        if (ch == '\\')
         {
             if (i + 1 < input.length())
             {
                 char next = input[++i];
-                if (inDoubleQuotes && (next == '"' || next == '\\'))
+                if ((inQuotes && (next == '"' || next == '\\')) || // Handle escapes in double quotes
+                    !inQuotes) // Handle escapes outside quotes
                 {
-                    arg += next; // Handle escaping inside double quotes
+                    arg += next;
                 }
                 else
                 {
-                    arg += '\\'; // Keep the backslash as is
+                    // Literal backslash followed by non-escaped character
+                    arg += '\\';
                     arg += next;
                 }
             }
             else
             {
-                arg += ch; // Lone backslash
+                // Lone backslash at the end of the input
+                arg += ch;
             }
         }
-        else if (ch == '"' && !inSingleQuotes) // Toggle double quotes
+        else if (inQuotes)
         {
-            inDoubleQuotes = !inDoubleQuotes;
-        }
-        else if (ch == '\'' && !inDoubleQuotes) // Toggle single quotes
-        {
-            inSingleQuotes = !inSingleQuotes;
-        }
-        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes) // Split arguments outside quotes
-        {
-            if (!arg.empty())
+            if (ch == quoteChar)
             {
-                args.push_back(arg);
-                arg.clear();
+                inQuotes = false;
+            }
+            else
+            {
+                arg += ch;
             }
         }
-        else if (inSingleQuotes && ch == '\\') // Special case: handle backslash inside single quotes
+        else if (inSingleQuotes)
         {
-            // Preserve the backslash literally within single quotes
-            arg += '\\';
+            if (ch == '\'')
+            {
+                inSingleQuotes = false;
+            }
+            else
+            {
+                arg += ch;
+            }
         }
         else
         {
-            arg += ch; // Add the character as is
+            if (isspace(ch))
+            {
+                if (!arg.empty())
+                {
+                    args.push_back(arg);
+                    arg.clear();
+                }
+            }
+            else if (ch == '"')
+            {
+                inQuotes = true;
+                quoteChar = '"';
+            }
+            else if (ch == '\'')
+            {
+                inSingleQuotes = true;
+            }
+            else
+            {
+                arg += ch;
+            }
         }
     }
 
     if (!arg.empty())
     {
-        args.push_back(arg); // Add any remaining argument
+        args.push_back(arg);
     }
 
     return args;
