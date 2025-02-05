@@ -1,349 +1,295 @@
 #include <iostream>
-#include <vector>
 #include <string>
-#include <algorithm>
-#include <cctype>
+#include <vector>
+#include <cstring>
 #include <cstdlib>
+#include <cassert>
 #include <unistd.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sstream>
+#include <pwd.h>
 #include <sys/wait.h>
+#include <fstream>
+#include <sstream>
 
-using namespace std;
+#define UNIMPLEMENTED(msg) do { std::cerr << __FILE__ << ":" << __LINE__ << ": UNIMPLEMENTED: " << msg << std::endl; exit(1); } while (false)
+#define UNREACHABLE(msg) do { std::cerr << __FILE__ << ":" << __LINE__ << ": UNREACHABLE" << std::endl; exit(1); } while (false)
 
-// Helper functions to trim strings
-inline void ltrim(string &s)
-{
-    s.erase(s.begin(), find_if(s.begin(), s.end(), [](unsigned char ch)
-                               { return !isspace(ch); }));
+enum class QuoteMode {
+    UNQUOTED,
+    SINGLE,
+    DOUBLE,
+};
+
+struct StringArray {
+    std::vector<std::string> data;
+
+    void add(const std::string& value) {
+        data.push_back(value);
+    }
+
+    void clear() {
+        data.clear();
+    }
+};
+
+struct Command {
+    std::string command;
+    std::string description;
+    int (*function)(StringArray& args);
+};
+
+std::vector<Command> builtins;
+std::vector<FILE*> files;
+
+void close_open_files() {
+    for (auto& file : files) {
+        if (file != nullptr) {
+            fclose(file);
+            file = nullptr;
+        }
+    }
 }
 
-inline void rtrim(string &s)
-{
-    s.erase(find_if(s.rbegin(), s.rend(), [](unsigned char ch)
-                    { return !isspace(ch); })
-                .base(),
-            s.end());
-}
+std::string read_arg(const std::string& string, const char* delim, size_t* rest, bool* quoted, QuoteMode* quote, bool* cont) {
+    *cont = false;
+    std::string ret;
+    const char* p = string.c_str() + *rest;
 
-// Function to split the input into tokens
-vector<string> splitInput(const string &input)
-{
-    vector<string> args;
-    string arg;
-    bool inQuotes = false;
-    bool inSingleQuotes = false;
-    char quoteChar = '\0';
-
-    for (size_t i = 0; i < input.length(); ++i)
-    {
-        char ch = input[i];
-
-        // Handle escape sequences
-        if (ch == '\\')
-        {
-            if (i + 1 < input.length())
-            {
-                char next = input[++i];
-                if ((inQuotes && (next == '"' || next == '\\')) || // Handle escapes in double quotes
-                    !inQuotes) // Handle escapes outside quotes
-                {
-                    arg += next;
-                }
-                else
-                {
-                    // Literal backslash followed by non-escaped character
-                    arg += '\\';
-                    arg += next;
-                }
-            }
-            else
-            {
-                // Lone backslash at the end of the input
-                arg += ch;
-            }
-        }
-        else if (inQuotes)
-        {
-            if (ch == quoteChar)
-            {
-                inQuotes = false;
-            }
-            else
-            {
-                arg += ch;
-            }
-        }
-        else if (inSingleQuotes)
-        {
-            if (ch == '\'')
-            {
-                inSingleQuotes = false;
-            }
-            else
-            {
-                arg += ch;
-            }
-        }
-        else
-        {
-            if (isspace(ch))
-            {
-                if (!arg.empty())
-                {
-                    args.push_back(arg);
-                    arg.clear();
+    while (*p != '\0' && (*quote != QuoteMode::UNQUOTED || strchr(delim, *p) == nullptr)) {
+        if (*quote == QuoteMode::UNQUOTED && *p == '>') {
+            if (p == string.c_str()) {
+                ret.push_back('>');
+                p++;
+                if (*p == '>') {
+                    ret.push_back('>');
+                    p++;
                 }
             }
-            else if (ch == '"')
-            {
-                inQuotes = true;
-                quoteChar = '"';
-            }
-            else if (ch == '\'')
-            {
-                inSingleQuotes = true;
-            }
-            else
-            {
-                arg += ch;
-            }
+            *rest = p - string.c_str();
+            ret.push_back('\0');
+            return ret;
         }
+
+        switch (*p) {
+            case '\\': {
+                switch (*quote) {
+                    case QuoteMode::DOUBLE: {
+                        p++;
+                        switch (*p) {
+                            case '\\':
+                            case '$':
+                            case '"':
+                            case '\n':
+                                ret.push_back(*p);
+                                break;
+                            default:
+                                ret.push_back('\\');
+                                ret.push_back(*p);
+                                break;
+                        }
+                    }; break;
+
+                    case QuoteMode::SINGLE:
+                        ret.push_back(*p);
+                        break;
+
+                    case QuoteMode::UNQUOTED:
+                        p++;
+                        switch (*p) {
+                            case '\n':
+                                assert(*(p + 1) == '\0');
+                                *cont = true;
+                                break;
+                            default:
+                                ret.push_back(*p);
+                                break;
+                        }
+                        break;
+
+                    default:
+                        UNREACHABLE("Unknown quote mode");
+                        break;
+                }
+            }; break;
+
+            case '"': {
+                switch (*quote) {
+                    case QuoteMode::UNQUOTED:
+                        *quote = QuoteMode::DOUBLE;
+                        *quoted = true;
+                        break;
+
+                    case QuoteMode::SINGLE:
+                        ret.push_back('"');
+                        break;
+
+                    case QuoteMode::DOUBLE:
+                        *quote = QuoteMode::UNQUOTED;
+                        break;
+
+                    default:
+                        UNREACHABLE("Unknown quote mode");
+                        break;
+                }
+            }; break;
+
+            case '\'': {
+                switch (*quote) {
+                    case QuoteMode::UNQUOTED:
+                        *quote = QuoteMode::SINGLE;
+                        *quoted = true;
+                        break;
+
+                    case QuoteMode::SINGLE:
+                        *quote = QuoteMode::UNQUOTED;
+                        break;
+
+                    case QuoteMode::DOUBLE:
+                        ret.push_back('\'');
+                        break;
+
+                    default:
+                        UNREACHABLE("Unknown quote mode");
+                        break;
+                }
+            }; break;
+
+            default:
+                ret.push_back(*p);
+                break;
+        }
+        p++;
     }
 
-    if (!arg.empty())
-    {
-        args.push_back(arg);
+    if (*quote != QuoteMode::UNQUOTED) {
+        assert(*p == '\0');
+        *cont = true;
     }
-
-    return args;
+    *rest = p - string.c_str();
+    ret.push_back('\0');
+    return ret;
 }
 
-
-// Function to check if a command is a built-in
-bool isBuiltin(const string &command, const vector<string> &builtins)
-{
-    return find(builtins.begin(), builtins.end(), command) != builtins.end();
-}
-
-// Search for an executable in the PATH
-string findExecutable(const string &command)
-{
-    char *path_env = getenv("PATH");
-    if (path_env == nullptr)
-        return "";
-
-    string path(path_env);
-    size_t pos = 0;
-
-    while ((pos = path.find(':')) != string::npos)
-    {
-        string dir = path.substr(0, pos);
-        path.erase(0, pos + 1);
-
-        string file_path = dir + "/" + command;
-        if (access(file_path.c_str(), R_OK | X_OK) == 0)
-        {
-            return file_path; // Return the first match found
-        }
+int run_program(const std::string& file_path, StringArray& args) {
+    std::vector<char*> argv;
+    for (const auto& arg : args.data) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
     }
+    argv.push_back(nullptr);
 
-    // Check the remaining part of PATH
-    if (!path.empty())
-    {
-        string file_path = path + "/" + command;
-        if (access(file_path.c_str(), R_OK | X_OK) == 0)
-        {
-            return file_path; // Return the first match found
-        }
-    }
-
-    return ""; // No executable found
-}
-
-// Execute external commands
-void executeExternal(const vector<string> &args)
-{
     pid_t pid = fork();
+    switch (pid) {
+        case -1:
+            assert(false && "Out of memory");
+            UNREACHABLE("Fork failed");
+            return -1;
 
-    if (pid == -1)
-    {
-        cerr << "Error: failed to fork process\n";
-        return;
-    }
-
-    if (pid == 0) // Child process
-    {
-        // Convert vector<string> to char* array for execvp
-        vector<char *> c_args;
-        for (const string &arg : args)
-        {
-            c_args.push_back(const_cast<char *>(arg.c_str()));
+        case 0: {
+            for (size_t i = 0; i < files.size(); i++) {
+                if (files[i] != nullptr) {
+                    int fd = fileno(files[i]);
+                    assert(dup2(fd, i) == i);
+                }
+            }
+            assert(execve(file_path.c_str(), argv.data(), environ) != -1);
+            UNREACHABLE("Exec failed");
+            return -1;
         }
-        c_args.push_back(nullptr); // Null-terminate the array
 
-        if (execvp(c_args[0], c_args.data()) == -1)
-        {
-            perror("Error");
-            exit(EXIT_FAILURE);
+        default: {
+            int wstatus = 0;
+            assert(waitpid(pid, &wstatus, 0) != -1);
+            return WEXITSTATUS(wstatus);
         }
     }
-    else // Parent process
-    {
-        int status;
-        waitpid(pid, &status, 0); // Wait for child to finish
-    }
+
+    return -1;
 }
 
-// Finding Present working directory
-void pwd()
-{
-    char pwd[PATH_MAX];
-    if (getcwd(pwd, sizeof(pwd)) != NULL)
-    {
-        cout << pwd << endl;
+int help_command(StringArray& args) {
+    FILE* out = stdout;
+    if (files.size() > STDOUT_FILENO && files[STDOUT_FILENO] != nullptr) {
+        out = files[STDOUT_FILENO];
     }
-    else
-    {
-        perror("getcwd() error");
+
+    FILE* err = stderr;
+    if (files.size() > STDERR_FILENO && files[STDERR_FILENO] != nullptr) {
+        err = files[STDERR_FILENO];
     }
+
+    if (args.data.size() > 1) {
+        std::string arg = args.data[1];
+        for (const auto& cmd : builtins) {
+            if (cmd.command == arg) {
+                fprintf(out, "    %-10s - %s\n", cmd.command.c_str(), cmd.description.c_str());
+                return 0;
+            }
+        }
+        fprintf(err, "%s: Builtin %s not found\n", args.data[0].c_str(), args.data[1].c_str());
+        return 1;
+    }
+    fprintf(out, "Available commands:\n");
+    for (const auto& cmd : builtins) {
+        fprintf(out, "    %-10s - %s\n", cmd.command.c_str(), cmd.description.c_str());
+    }
+    return 0;
 }
 
-// Echo command
-void echo(const vector<string> &args)
-{
-    for (size_t i = 1; i < args.size(); ++i)
-    {
-        if (i > 1)
-            cout << " ";
-        cout << args[i];
-    }
-    cout << endl;
-}
+// Implement other commands like `exit_command`, `echo_command`, `pwd_command`, etc. in a similar manner...
 
-int main()
-{
-    // List of built-in commands
-    vector<string> builtins = {
-        "type",
-        "echo",
-        "exit",
-        "pwd",
-        "cd",
-    };
+int main(int argc, char** argv) {
+    builtins.push_back({"help", "Displays help about commands.", help_command});
+    // Add other built-in commands...
 
-    // Flush after every std::cout / std::cerr
-    cout << unitbuf;
-    cerr << unitbuf;
+    // Flush after every printf
+    setbuf(stdout, nullptr);
 
-    while (true)
-    {
-        cout << "$ ";
+    while (!feof(stdin)) {
+        // FIXME read PS1
+        std::cout << "$ ";
 
-        string input;
-        getline(cin, input);
+        // Wait for user input
+        char input[100];
+        if (fgets(input, 100, stdin) == nullptr) break;
 
-        // Exiting the shell
-        if (input == "exit 0")
-        {
-            exit(0);
-        }
+        const char* delim = " \n";
+        StringArray args;
+        bool error = false;
+        QuoteMode quote = QuoteMode::UNQUOTED;
+        size_t rest = 0;
+        std::string arg;
+        bool quoted;
+        bool get_new_line = false;
 
-        // Parse the input into arguments
-        vector<string> args = splitInput(input);
-        if (args.empty())
-            continue;
+        while (!(arg = read_arg(input, delim, &rest, &quoted, &quote, &get_new_line)).empty()) {
+            while (get_new_line) {
+                assert(rest == 0 || input[rest] == '\0');
+                // FIXME read PS2
+                std::cout << "> ";
 
-        string command = args[0];
-
-        // Handle the `echo` command
-        if (command == "echo")
-        {
-            echo(args);
-        }
-
-        // Handle the `cat` command
-        else if (command == "cat")
-        {
-            executeExternal(args);
-        }
-
-        // Handle the `pwd` command
-        else if (command == "pwd")
-        {
-            if (args.size() == 1)
-                pwd();
-            else
-            {
-                cerr << "pwd: No parameters required." << endl;
-            }
-        }
-
-        // Handle the `cd` command
-        else if (command == "cd")
-        {
-            if (args.size() == 1 || args[1] == "~")
-            {
-                const char *HOMEPATH = getenv("HOME");
-                if (HOMEPATH && chdir(HOMEPATH) == 0)
-                {
-                    // Successfully changed to home directory
-                }
-                else
-                {
-                    cerr << command << ": Unable to access home directory" << endl;
+                // Wait for user input
+                if (fgets(input, 100, stdin) == nullptr) {
+                    switch (quote) {
+                        case QuoteMode::SINGLE:
+                            std::cerr << "syntax error: Unexpected EOF while looking for matching single quote << ' >>" << std::endl;
+                            error = true;
+                            break;
+                        case QuoteMode::DOUBLE:
+                            std::cerr << "syntax error: Unexpected EOF while looking for matching double quote << \" >>" << std::endl;
+                            error = true;
+                            break;
+                        case QuoteMode::UNQUOTED:
+                            break;
+                    }
+                    break;
+                } else {
+                    arg = continue_arg(arg, input, delim, &rest, &quoted, &quote, &get_new_line);
+                    assert(!arg.empty());
                 }
             }
-            else if (chdir(args[1].c_str()) != 0)
-            {
-                cerr << command << ": " << args[1] << ": No such file or directory" << endl;
-            }
-        }
 
-        // Handle the `type` command
-        else if (command == "type")
-        {
-            if (args.size() == 1)
-            {
-                cerr << "type: missing argument\n";
-                continue;
-            }
+            if (error) continue;
 
-            if (isBuiltin(args[1], builtins))
-            {
-                cout << args[1] << " is a shell builtin\n";
-            }
-            else if (args[1].find('/') != string::npos && access(args[1].c_str(), R_OK | X_OK) == 0)
-            {
-                cout << args[1] << " is " << args[1] << "\n";
-            }
-            else
-            {
-                string execPath = findExecutable(args[1]);
-                if (!execPath.empty())
-                {
-                    cout << args[1] << " is " << execPath << "\n";
-                }
-                else
-                {
-                    cerr << args[1] << ": not found\n";
-                }
-            }
-        }
-
-        // Handle unknown or external commands
-        else
-        {
-            string execPath = findExecutable(command);
-            if (!execPath.empty())
-            {
-                executeExternal(args);
-            }
-            else
-            {
-                cerr << command << ": command not found\n";
-            }
+            // handle command execution logic...
         }
     }
 
