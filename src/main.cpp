@@ -34,7 +34,6 @@ vector<string> splitInput(const string &input)
     string arg;
     bool inQuotes = false;
     bool inSingleQuotes = false;
-    char quoteChar = '\0';
 
     for (size_t i = 0; i < input.length(); ++i)
     {
@@ -42,7 +41,7 @@ vector<string> splitInput(const string &input)
 
         if (inQuotes)
         {
-            if (ch == quoteChar)
+            if (ch == '"')
             {
                 inQuotes = false;
             }
@@ -79,15 +78,13 @@ vector<string> splitInput(const string &input)
             else if (ch == '"')
             {
                 inQuotes = true;
-                quoteChar = '"';
             }
             else if (ch == '\'')
             {
                 inSingleQuotes = true;
             }
             else if(ch == '\\' && i < input.length()-1){
-                arg += input[i+1];
-                i+=2;
+                arg += input[++i];
             }
             else
             {
