@@ -27,56 +27,72 @@ inline void rtrim(string &s)
             s.end());
 }
 
-std::vector<std::string> splitInput(const std::string& input) {
-    std::vector<std::string> tokens;
-    std::string current;
+// Function to split the input into tokens
+vector<string> splitInput(const string &input)
+{
+    vector<string> args;
+    string arg;
     bool inDoubleQuotes = false;
     bool inSingleQuotes = false;
-    bool escaping = false;
 
-    for (size_t i = 0; i < input.size(); ++i) {
-        char c = input[i];
+    for (size_t i = 0; i < input.length(); ++i)
+    {
+        char ch = input[i];
 
-        if (escaping) {
-            current += c;
-            escaping = false;
-        } else if (c == '\\') {
-            escaping = true;
-        } else if (c == '"') {
-            if (inSingleQuotes) {
-                current += c; // Inside single quotes, treat as normal char
-            } else if (inDoubleQuotes) {
-                inDoubleQuotes = false;
-            } else {
-                inDoubleQuotes = true;
+        if (ch == '\\' && !inSingleQuotes) // Handle escaping outside of single quotes
+        {
+            if (i + 1 < input.length())
+            {
+                char next = input[++i];
+                if (inDoubleQuotes && (next == '"' || next == '\\'))
+                {
+                    arg += next; // Handle escaping inside double quotes
+                }
+                else
+                {
+                    arg += '\\'; // Keep the backslash as is
+                    arg += next;
+                }
             }
-        } else if (c == '\'') {
-            if (inDoubleQuotes) {
-                current += c; // Inside double quotes, treat as normal char
-            } else if (inSingleQuotes) {
-                inSingleQuotes = false;
-            } else {
-                inSingleQuotes = true;
+            else
+            {
+                arg += ch; // Lone backslash
             }
-        } else if (isspace(c)) {
-            if (inDoubleQuotes || inSingleQuotes) {
-                current += c; // Preserve space inside quotes
-            } else if (!current.empty()) {
-                tokens.push_back(current);
-                current.clear();
+        }
+        else if (ch == '"' && !inSingleQuotes) // Toggle double quotes
+        {
+            inDoubleQuotes = !inDoubleQuotes;
+        }
+        else if (ch == '\'' && !inDoubleQuotes) // Toggle single quotes
+        {
+            inSingleQuotes = !inSingleQuotes;
+        }
+        else if (isspace(ch) && !inSingleQuotes && !inDoubleQuotes) // Split arguments outside quotes
+        {
+            if (!arg.empty())
+            {
+                args.push_back(arg);
+                arg.clear();
             }
-        } else {
-            current += c;
+        }
+        else if (inSingleQuotes && ch == '\\') // Special case: handle backslash inside single quotes
+        {
+            // Preserve the backslash literally within single quotes
+            arg += '\\';
+        }
+        else
+        {
+            arg += ch; // Add the character as is
         }
     }
 
-    if (!current.empty()) {
-        tokens.push_back(current);
+    if (!arg.empty())
+    {
+        args.push_back(arg); // Add any remaining argument
     }
 
-    return tokens;
+    return args;
 }
-
 
 
 // Function to check if a command is a built-in
