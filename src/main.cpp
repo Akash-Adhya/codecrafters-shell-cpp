@@ -36,7 +36,7 @@ vector<string> splitInput(const string &input) {
     for (size_t i = 0; i < input.length(); ++i) {
         char c = input[i];
         
-        if (c == '\' && i + 1 < input.length() && input[i + 1] == '\') {
+        if (c == '\\' && i + 1 < input.length() && input[i + 1] == '\\') {
             token += '\\';
             ++i; 
         } else if (c == '\'' && !inSingleQuotes) {
