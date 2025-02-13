@@ -41,7 +41,7 @@ string autocomplete(const string &input)
             matches.push_back(cmd);
         }
     }
-    return matches.size() == 1 ? matches[0] : "\a";
+    return matches.size() == 1 ? matches[0] : "";
 }
 
 // Helper functions to trim strings
@@ -264,6 +264,9 @@ int main()
                 {
                     cout << suggestion.substr(input.length()) << " "; // Complete the word
                     input = suggestion + " ";
+                }
+                else {
+                    cout<<"\a"<<endl;
                 }
             }
             else if (ch == 127) // Backspace handling
