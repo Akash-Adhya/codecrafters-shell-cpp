@@ -304,41 +304,60 @@ int main()
         string input;
         char ch;
         static int tabPressCount = 0;
-        while (true) {
+        while (true)
+        {
             ch = getChar();
 
-            if (ch == '\n') {
+            if (ch == '\n')
+            {
                 cout << endl;
                 break;
-            } else if (ch == '\t') {
+            }
+            else if (ch == '\t')
+            {
                 vector<string> matches = autocomplete(input);
 
-                if (matches.empty()) {
+                if (matches.empty())
+                {
                     cout << "\a"; // No match, ring the bell
                     tabPressCount = 0;
-                } else if (matches.size() == 1) {
-                    cout << matches[0].substr(input.length()) << " ";
-                    input = matches[0] + " ";
+                }
+                else if (matches.size() == 1)
+                {
+                    cout << matches[0].substr(input.length()) << " "; // Append remaining part + space
+                    input = matches[0] + " ";          // Ensure space is added to the stored input
                     tabPressCount = 0;
-                } else {
-                    if (tabPressCount == 0) {
+                }
+                else
+                {
+                    if (tabPressCount == 0)
+                    {
                         cout << "\a";
-                    } else {
+                    }
+                    else
+                    {
                         cout << endl;
-                        for (const string &cmd : matches) {
+                        for (const string &cmd : matches)
+                        {
                             cout << cmd << "  ";
                         }
-                        cout << endl << "$ " << input;
+                        cout << endl
+                             << "$ " << input;
                     }
                     tabPressCount++;
                 }
-            } else if (ch == 127) {
-                if (!input.empty()) {
+            }
+            else if (ch == 127)
+            {
+                if (!input.empty())
+                {
                     input.pop_back();
                     cout << "\b \b";
                 }
                 tabPressCount = 0;
-            } else {
+            }
+            else
+            {
                 input += ch;
                 cout << ch;
                 tabPressCount = 0;
