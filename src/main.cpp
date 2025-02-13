@@ -9,8 +9,40 @@
 #include <sys/types.h>
 #include <sstream>
 #include <sys/wait.h>
+#include <termios.h>
 
 using namespace std;
+
+// List of built-in commands
+vector<string> builtins = {"type", "echo", "exit", "pwd", "cd",};
+
+// Function to get user input character by character
+char getChar()
+{
+    struct termios oldt, newt;
+    char ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO); // Disable line buffering and echo
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+// Function to find autocompletion suggestion
+string autocomplete(const string &input)
+{
+    vector<string> matches;
+    for (const string &cmd : builtins)
+    {
+        if (cmd.find(input) == 0) // If input is a prefix of a command
+        {
+            matches.push_back(cmd);
+        }
+    }
+    return matches.size() == 1 ? matches[0] : "";
+}
 
 // Helper functions to trim strings
 inline void ltrim(string &s)
@@ -204,8 +236,6 @@ void echo(const vector<string> &args)
 
 int main()
 {
-    // List of built-in commands
-    vector<string> builtins = {"type", "echo", "exit", "pwd", "cd",};
 
     // Flush after every std::cout / std::cerr
     cout << unitbuf;
@@ -216,7 +246,41 @@ int main()
         cout << "$ ";
 
         string input;
-        getline(cin, input);
+        char ch;
+
+        while (true)
+        {
+            ch = getChar();
+
+            if (ch == '\n') // Enter key
+            {
+                cout << endl;
+                break;
+            }
+            else if (ch == '\t') // TAB key for autocompletion
+            {
+                string suggestion = autocomplete(input);
+                if (!suggestion.empty())
+                {
+                    cout << suggestion.substr(input.length()) << " "; // Complete the word
+                    input = suggestion + " ";
+                }
+            }
+            else if (ch == 127) // Backspace handling
+            {
+                if (!input.empty())
+                {
+                    input.pop_back();
+                    cout << "\b \b"; // Erase character from screen
+                }
+            }
+            else
+            {
+                input += ch;
+                cout << ch;
+            }
+        }
+
 
         // Exiting the shell
         if (input == "exit 0")
