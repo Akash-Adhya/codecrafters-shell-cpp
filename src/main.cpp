@@ -95,6 +95,7 @@ vector<string> autocomplete(const string &input)
         }
     }
 
+    sort(matches.begin(), matches.end());
     return matches;
 }
 
