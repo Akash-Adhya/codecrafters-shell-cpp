@@ -303,7 +303,6 @@ int main()
         string input;
         char ch;
         static int tabPressCount = 0;
-
         while (true) {
             ch = getChar();
 
