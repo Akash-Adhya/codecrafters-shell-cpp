@@ -72,27 +72,31 @@ vector<string> getExecutablesFromPath()
 }
 
 // Updated autocomplete function
-vector<string> autocomplete(const string &input) {
+vector<string> autocomplete(const string &input)
+{
     vector<string> matches;
 
     // Check built-in commands
-    for (const string &cmd : builtins) {
-        if (cmd.find(input) == 0) {
+    for (const string &cmd : builtins)
+    {
+        if (cmd.find(input) == 0)
+        {
             matches.push_back(cmd);
         }
     }
 
     // Check external executables
     vector<string> executables = getExecutablesFromPath();
-    for (const string &cmd : executables) {
-        if (cmd.find(input) == 0) {
+    for (const string &cmd : executables)
+    {
+        if (cmd.find(input) == 0)
+        {
             matches.push_back(cmd);
         }
     }
 
     return matches;
 }
-
 
 // Helper functions to trim strings
 inline void ltrim(string &s)
@@ -298,51 +302,46 @@ int main()
 
         string input;
         char ch;
+        static int tabPressCount = 0;
 
-        while (true)
-        {
+        while (true) {
             ch = getChar();
 
-            static int tabPressCount = 0; // Track successive TAB presses
-
-            if (ch == '\t')
-            { // TAB key for autocompletion
+            if (ch == '\n') {
+                cout << endl;
+                break;
+            } else if (ch == '\t') {
                 vector<string> matches = autocomplete(input);
 
-                if (matches.empty())
-                {
-                    cout << "\a"; // No match, just ring the bell
+                if (matches.empty()) {
+                    cout << "\a"; // No match, ring the bell
                     tabPressCount = 0;
-                }
-                else if (matches.size() == 1)
-                {
-                    // Single match, autocomplete
+                } else if (matches.size() == 1) {
                     cout << matches[0].substr(input.length()) << " ";
                     input = matches[0] + " ";
                     tabPressCount = 0;
-                }
-                else
-                {
-                    if (tabPressCount == 0)
-                    {
-                        cout << "\a"; // First TAB press, ring the bell
-                    }
-                    else
-                    {
-                        cout << endl; // Second TAB press, show matches
-                        for (const string &cmd : matches)
-                        {
+                } else {
+                    if (tabPressCount == 0) {
+                        cout << "\a";
+                    } else {
+                        cout << endl;
+                        for (const string &cmd : matches) {
                             cout << cmd << "  ";
                         }
-                        cout << endl
-                             << "$ " << input; // Reprint prompt with input
+                        cout << endl << "$ " << input;
                     }
                     tabPressCount++;
                 }
-            }
-            else
-            {
-                tabPressCount = 0; // Reset counter on other keypresses
+            } else if (ch == 127) {
+                if (!input.empty()) {
+                    input.pop_back();
+                    cout << "\b \b";
+                }
+                tabPressCount = 0;
+            } else {
+                input += ch;
+                cout << ch;
+                tabPressCount = 0;
             }
         }
 
