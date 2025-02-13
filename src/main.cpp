@@ -324,7 +324,6 @@ int main()
                         cout << "\a";
                     } else {
                         cout << endl;
-                        reverse(matches.begin(), matches.end());
                         for (const string &cmd : matches) {
                             cout << cmd << "  ";
                         }
