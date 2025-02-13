@@ -69,6 +69,10 @@ string autocomplete(const string &input) {
             matches.push_back(cmd);
         }
     }
+    
+    if(matches.size() >= 1){
+        return matches.size() == 1 ? matches[0] : "";
+    }
 
     // Check external executables
     vector<string> executables = getExecutablesFromPath();
