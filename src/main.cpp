@@ -15,7 +15,13 @@
 using namespace std;
 
 // List of built-in commands
-vector<string> builtins = {"type", "echo", "exit", "pwd", "cd",};
+vector<string> builtins = {
+    "type",
+    "echo",
+    "exit",
+    "pwd",
+    "cd",
+};
 
 // Function to get user input character by character
 char getChar()
@@ -32,35 +38,41 @@ char getChar()
 }
 
 // Function to get all executables from PATH
-vector<string> getExecutablesFromPath() {
+vector<string> getExecutablesFromPath()
+{
     vector<string> executables;
     char *path_env = getenv("PATH");
-    if (!path_env) return executables;
+    if (!path_env)
+        return executables;
 
     stringstream ss(path_env);
     string dir;
-    
-    while (getline(ss, dir, ':')) { // Split PATH by ':'
+
+    while (getline(ss, dir, ':'))
+    { // Split PATH by ':'
         DIR *dp = opendir(dir.c_str());
-        if (dp) {
+        if (dp)
+        {
             struct dirent *entry;
-            while ((entry = readdir(dp)) != nullptr) {
+            while ((entry = readdir(dp)) != nullptr)
+            {
                 string filename(entry->d_name);
                 string fullPath = dir + "/" + filename;
-                
-                if (access(fullPath.c_str(), X_OK) == 0) { // Check if executable
+
+                if (access(fullPath.c_str(), X_OK) == 0)
+                { // Check if executable
                     executables.push_back(filename);
                 }
             }
             closedir(dp);
         }
     }
-    
+
     return executables;
 }
 
 // Updated autocomplete function
-string autocomplete(const string &input) {
+vector<string> autocomplete(const string &input) {
     vector<string> matches;
 
     // Check built-in commands
@@ -68,10 +80,6 @@ string autocomplete(const string &input) {
         if (cmd.find(input) == 0) {
             matches.push_back(cmd);
         }
-    }
-    
-    if(matches.size() >= 1){
-        return matches.size() == 1 ? matches[0] : "";
     }
 
     // Check external executables
@@ -82,8 +90,9 @@ string autocomplete(const string &input) {
         }
     }
 
-    return matches.size() == 1 ? matches[0] : "";
+    return matches;
 }
+
 
 // Helper functions to trim strings
 inline void ltrim(string &s)
@@ -156,7 +165,8 @@ vector<string> splitInput(const string &input)
             {
                 inSingleQuotes = true;
             }
-            else if(ch == '\\' && i < input.length()-1){
+            else if (ch == '\\' && i < input.length() - 1)
+            {
                 arg += input[++i];
             }
             else
@@ -293,38 +303,48 @@ int main()
         {
             ch = getChar();
 
-            if (ch == '\n') // Enter key
-            {
-                cout << endl;
-                break;
-            }
-            else if (ch == '\t') // TAB key for autocompletion
-            {
-                string suggestion = autocomplete(input);
-                if (!suggestion.empty())
+            static int tabPressCount = 0; // Track successive TAB presses
+
+            if (ch == '\t')
+            { // TAB key for autocompletion
+                vector<string> matches = autocomplete(input);
+
+                if (matches.empty())
                 {
-                    cout << suggestion.substr(input.length()) << " "; // Complete the word
-                    input = suggestion + " ";
+                    cout << "\a"; // No match, just ring the bell
+                    tabPressCount = 0;
                 }
-                else {
-                    cout<<"\a"<<endl;
-                }
-            }
-            else if (ch == 127) // Backspace handling
-            {
-                if (!input.empty())
+                else if (matches.size() == 1)
                 {
-                    input.pop_back();
-                    cout << "\b \b"; // Erase character from screen
+                    // Single match, autocomplete
+                    cout << matches[0].substr(input.length()) << " ";
+                    input = matches[0] + " ";
+                    tabPressCount = 0;
+                }
+                else
+                {
+                    if (tabPressCount == 0)
+                    {
+                        cout << "\a"; // First TAB press, ring the bell
+                    }
+                    else
+                    {
+                        cout << endl; // Second TAB press, show matches
+                        for (const string &cmd : matches)
+                        {
+                            cout << cmd << "  ";
+                        }
+                        cout << endl
+                             << "$ " << input; // Reprint prompt with input
+                    }
+                    tabPressCount++;
                 }
             }
             else
             {
-                input += ch;
-                cout << ch;
+                tabPressCount = 0; // Reset counter on other keypresses
             }
         }
-
 
         // Exiting the shell
         if (input == "exit 0")
