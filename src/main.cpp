@@ -10,6 +10,7 @@
 #include <sstream>
 #include <sys/wait.h>
 #include <termios.h>
+#include <dirent.h>
 
 using namespace std;
 
@@ -30,17 +31,53 @@ char getChar()
     return ch;
 }
 
-// Function to find autocompletion suggestion
-string autocomplete(const string &input)
-{
+// Function to get all executables from PATH
+vector<string> getExecutablesFromPath() {
+    vector<string> executables;
+    char *path_env = getenv("PATH");
+    if (!path_env) return executables;
+
+    stringstream ss(path_env);
+    string dir;
+    
+    while (getline(ss, dir, ':')) { // Split PATH by ':'
+        DIR *dp = opendir(dir.c_str());
+        if (dp) {
+            struct dirent *entry;
+            while ((entry = readdir(dp)) != nullptr) {
+                string filename(entry->d_name);
+                string fullPath = dir + "/" + filename;
+                
+                if (access(fullPath.c_str(), X_OK) == 0) { // Check if executable
+                    executables.push_back(filename);
+                }
+            }
+            closedir(dp);
+        }
+    }
+    
+    return executables;
+}
+
+// Updated autocomplete function
+string autocomplete(const string &input) {
     vector<string> matches;
-    for (const string &cmd : builtins)
-    {
-        if (cmd.find(input) == 0) // If input is a prefix of a command
-        {
+
+    // Check built-in commands
+    for (const string &cmd : builtins) {
+        if (cmd.find(input) == 0) {
             matches.push_back(cmd);
         }
     }
+
+    // Check external executables
+    vector<string> executables = getExecutablesFromPath();
+    for (const string &cmd : executables) {
+        if (cmd.find(input) == 0) {
+            matches.push_back(cmd);
+        }
+    }
+
     return matches.size() == 1 ? matches[0] : "";
 }
 
