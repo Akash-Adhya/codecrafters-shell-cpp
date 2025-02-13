@@ -41,7 +41,7 @@ string autocomplete(const string &input)
             matches.push_back(cmd);
         }
     }
-    return matches.size() == 1 ? matches[0] : "";
+    return matches.size() == 1 ? matches[0] : "\a";
 }
 
 // Helper functions to trim strings
