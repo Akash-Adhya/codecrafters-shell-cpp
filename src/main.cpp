@@ -70,6 +70,26 @@ vector<string> getExecutablesFromPath()
     return executables;
 }
 
+// Function to find the longest common prefix
+string longestCommonPrefix(const vector<string> &matches)
+{
+    if (matches.empty())
+        return "";
+    string prefix = matches[0];
+    for (size_t i = 1; i < matches.size(); ++i)
+    {
+        size_t j = 0;
+        while (j < prefix.size() && j < matches[i].size() && prefix[j] == matches[i][j])
+        {
+            j++;
+        }
+        prefix = prefix.substr(0, j);
+        if (prefix.empty())
+            break;
+    }
+    return prefix;
+}
+
 // Autocomplete function
 vector<string> autocomplete(const string &input)
 {
@@ -315,36 +335,33 @@ int main()
             else if (ch == '\t')
             {
                 vector<string> matches = autocomplete(input);
-                matches.erase(std::unique(matches.begin(), matches.end()), matches.end());
-
+                matches.erase(unique(matches.begin(), matches.end()), matches.end());
                 if (matches.empty())
                 {
-                    cout << "\a"; // No match, ring the bell
-                    tabPressCount = 0;
-                }
-                else if (matches.size() == 1)
-                {
-                    cout << matches[0].substr(input.length()) << " "; // Append remaining part + space
-                    input = matches[0] + " ";          // Ensure space is added to the stored input
+                    cout << "\a";
                     tabPressCount = 0;
                 }
                 else
                 {
-                    if (tabPressCount == 0)
+                    string commonPrefix = longestCommonPrefix(matches);
+                    if (commonPrefix.length() > input.length())
                     {
-                        cout << "\a";
+                        cout << commonPrefix.substr(input.length());
+                        input = commonPrefix;
                     }
                     else
                     {
-                        cout << endl;
-                        for (const string &cmd : matches)
+                        if (tabPressCount == 1)
                         {
-                            cout << cmd << "  ";
+                            cout << endl;
+                            for (const string &cmd : matches)
+                            {
+                                cout << cmd << "  ";
+                            }
+                            cout << endl << "$ " << input;
                         }
-                        cout << endl
-                             << "$ " << input;
+                        tabPressCount++;
                     }
-                    tabPressCount++;
                 }
             }
             else if (ch == 127)
