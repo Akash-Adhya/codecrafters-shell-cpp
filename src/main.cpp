@@ -346,8 +346,8 @@ int main()
                     string commonPrefix = longestCommonPrefix(matches);
                     if (commonPrefix.length() > input.length())
                     {
-                        cout << commonPrefix.substr(input.length());
-                        input = commonPrefix;
+                        cout << commonPrefix.substr(input.length()) << " ";
+                        input = commonPrefix + " ";
                     }
                     else
                     {
