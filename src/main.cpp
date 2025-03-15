@@ -347,7 +347,7 @@ int main()
                     if (commonPrefix.length() > input.length())
                     {
                         cout << commonPrefix.substr(input.length()) << " ";
-                        input = commonPrefix + " ";
+                        input = commonPrefix;
                     }
                     else
                     {
