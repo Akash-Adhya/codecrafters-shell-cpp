@@ -315,6 +315,7 @@ int main()
             else if (ch == '\t')
             {
                 vector<string> matches = autocomplete(input);
+                matches.erase(std::unique(matches.begin(), matches.end()), matches.end());
 
                 if (matches.empty())
                 {
