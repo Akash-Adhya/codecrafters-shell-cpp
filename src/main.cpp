@@ -336,34 +336,42 @@ int main()
             else if (ch == '\t')
             {
                 vector<string> matches = autocomplete(input);
-                matches.erase(unique(matches.begin(), matches.end()), matches.end());
-                if (matches.empty())
+    matches.erase(unique(matches.begin(), matches.end()), matches.end());
+
+    if (matches.empty())
+    {
+        cout << "\a"; // Ring bell if no matches
+        tabPressCount = 0;
+    }
+    else
+    {
+        string commonPrefix = longestCommonPrefix(matches);
+        
+        if (commonPrefix.length() > input.length())
+        {
+            cout << commonPrefix.substr(input.length());
+            input = commonPrefix;
+            tabPressCount = 0; // Reset counter after successful completion
+        }
+        else
+        {
+            if (tabPressCount == 1)
+            {
+                cout << "\a\n"; 
+                for (const string &cmd : matches)
                 {
-                    cout << "\a";
-                    tabPressCount = 0;
+                    cout << cmd << "  ";
                 }
-                else
-                {
-                    string commonPrefix = longestCommonPrefix(matches);
-                    if (commonPrefix.length() > input.length())
-                    {
-                        cout << commonPrefix.substr(input.length());
-                        input = commonPrefix;
-                    }
-                    else
-                    {
-                        if (tabPressCount == 1)
-                        {
-                            cout << endl;
-                            for (const string &cmd : matches)
-                            {
-                                cout << cmd << "  ";
-                            }
-                            cout << endl << "$ " << input;
-                        }
-                        tabPressCount++;
-                    }
-                }
+                cout << endl << "$ " << input;
+                tabPressCount = 0; 
+            }
+            else
+            {
+                cout << "\a";
+                tabPressCount++;
+            }
+        }
+    }
             }
             else if (ch == 127)
             {
