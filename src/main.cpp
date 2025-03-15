@@ -343,7 +343,7 @@ int main()
                         cout << endl
                              << "$ " << input;
                     }
-                    tabPressCount++;
+                    tabPressCount=0;
                 }
             }
             else if (ch == 127)
