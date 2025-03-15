@@ -87,6 +87,7 @@ string longestCommonPrefix(const vector<string> &matches)
         if (prefix.empty())
             break;
     }
+    if(matches.size() == 1) return prefix+" ";
     return prefix;
 }
 
