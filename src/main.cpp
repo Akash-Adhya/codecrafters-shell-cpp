@@ -42,8 +42,7 @@ vector<string> getExecutablesFromPath()
 {
     vector<string> executables;
     char *path_env = getenv("PATH");
-    if (!path_env)
-        return executables;
+    if (!path_env) return executables;
 
     stringstream ss(path_env);
     string dir;
@@ -71,7 +70,7 @@ vector<string> getExecutablesFromPath()
     return executables;
 }
 
-// Updated autocomplete function
+// Autocomplete function
 vector<string> autocomplete(const string &input)
 {
     vector<string> matches;
