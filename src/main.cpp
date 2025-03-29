@@ -44,7 +44,8 @@ vector<string> getExecutablesFromPath()
 {
     vector<string> executables;
     char *path_env = getenv("PATH");
-    if (!path_env) return executables;
+    if (!path_env)
+        return executables;
 
     stringstream ss(path_env);
     string dir;
@@ -89,7 +90,8 @@ string longestCommonPrefix(const vector<string> &matches)
         if (prefix.empty())
             break;
     }
-    if(matches.size() == 1) return prefix+" ";
+    if (matches.size() == 1)
+        return prefix + " ";
     return prefix;
 }
 
@@ -144,34 +146,58 @@ vector<string> splitInput(const string &input)
     bool inQuotes = false;
     bool inSingleQuotes = false;
 
-    for (size_t i = 0; i < input.length(); ++i) {
+    for (size_t i = 0; i < input.length(); ++i)
+    {
         char ch = input[i];
-        if (inQuotes) {
-            if (ch == '"') inQuotes = false;
-            else arg += ch;
-        } else if (inSingleQuotes) {
-            if (ch == '\'' && i + 1 < input.length()) arg += input[++i];
-            else if (ch == '\'' && input[i + 1] == '\'') arg += '\'';
-            else if (ch == '\'') inSingleQuotes = false;
-            else arg += ch;
-        } else {
-            if (isspace(ch)) {
-                if (!arg.empty()) {
+        if (inQuotes)
+        {
+            if (ch == '"')
+                inQuotes = false;
+            else
+                arg += ch;
+        }
+        else if (inSingleQuotes)
+        {
+            if (ch == '\'' && i + 1 < input.length())
+                arg += input[++i];
+            else if (ch == '\'' && input[i + 1] == '\'')
+                arg += '\'';
+            else if (ch == '\'')
+                inSingleQuotes = false;
+            else
+                arg += ch;
+        }
+        else
+        {
+            if (isspace(ch))
+            {
+                if (!arg.empty())
+                {
                     args.push_back(arg);
                     arg.clear();
                 }
-            } else if (ch == '"') inQuotes = true;
-            else if (ch == '\'' && i + 1 < input.length()) arg += input[++i];
-            else if (ch == '>') {
-                if (!arg.empty()) {
+            }
+            else if (ch == '"')
+                inQuotes = true;
+            else if (ch == '\'')
+                inSingleQuotes = true;
+            else if (ch == '>' || (ch == '1' && i + 1 < input.length() && input[i + 1] == '>'))
+            {
+                if (!arg.empty())
+                {
                     args.push_back(arg);
                     arg.clear();
                 }
+                if (ch == '1')
+                    i++; // Skip the '>'
                 args.push_back(">");
-            } else arg += ch;
+            }
+            else
+                arg += ch;
         }
     }
-    if (!arg.empty()) args.push_back(arg);
+    if (!arg.empty())
+        args.push_back(arg);
     return args;
 }
 
@@ -217,46 +243,59 @@ string findExecutable(const string &command)
 }
 
 // Execute external commands
-void executeExternal(vector<string> &args) {
+void executeExternal(vector<string> &args)
+{
     int outFd = -1;
-    for (size_t i = 0; i < args.size(); ++i) {
-        if (args[i] == ">" || args[i] == "1>") {
-            if (i + 1 < args.size()) {
+    for (size_t i = 0; i < args.size(); ++i)
+    {
+        if (args[i] == ">" || args[i] == "1>")
+        {
+            if (i + 1 < args.size())
+            {
                 outFd = open(args[i + 1].c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (outFd == -1) {
+                if (outFd == -1)
+                {
                     perror("Failed to open file for writing");
                     return;
                 }
                 args.erase(args.begin() + i, args.begin() + i + 2);
                 break;
-            } else {
+            }
+            else
+            {
                 cerr << "Syntax error: expected file after >\n";
                 return;
             }
         }
     }
     pid_t pid = fork();
-    if (pid == -1) {
+    if (pid == -1)
+    {
         perror("Fork failed");
         return;
     }
-    if (pid == 0) { // Child process
-        if (outFd != -1) {
+    if (pid == 0)
+    { // Child process
+        if (outFd != -1)
+        {
             dup2(outFd, STDOUT_FILENO);
             close(outFd);
         }
         vector<char *> c_args;
-        for (string &arg : args) c_args.push_back(&arg[0]);
+        for (string &arg : args)
+            c_args.push_back(&arg[0]);
         c_args.push_back(nullptr);
         execvp(c_args[0], c_args.data());
         perror("Execution failed");
         exit(EXIT_FAILURE);
-    } else {
+    }
+    else
+    {
         waitpid(pid, nullptr, 0);
-        if (outFd != -1) close(outFd);
+        if (outFd != -1)
+            close(outFd);
     }
 }
-
 
 // Finding Present working directory
 void pwd()
@@ -275,13 +314,29 @@ void pwd()
 // Echo command
 void echo(const vector<string> &args)
 {
-    for (size_t i = 1; i < args.size(); ++i)
-    {
-        if (i > 1)
-            cout << " ";
-        cout << args[i];
+    int outFd = STDOUT_FILENO;
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (args[i] == ">" || args[i] == "1>") {
+            if (i + 1 < args.size()) {
+                outFd = open(args[i + 1].c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (outFd == -1) {
+                    perror("Failed to open file for writing");
+                    return;
+                }
+                args.erase((args.begin() + i), (args.begin() + i + 2));
+                break;
+            } else {
+                cerr << "Syntax error: expected file after >\n";
+                return;
+            }
+        }
     }
-    cout << endl;
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (i > 1) write(outFd, " ", 1);
+        write(outFd, args[i].c_str(), args[i].size());
+    }
+    write(outFd, "\n", 1);
+    if (outFd != STDOUT_FILENO) close(outFd);
 }
 
 int main()
@@ -310,42 +365,43 @@ int main()
             else if (ch == '\t')
             {
                 vector<string> matches = autocomplete(input);
-    matches.erase(unique(matches.begin(), matches.end()), matches.end());
+                matches.erase(unique(matches.begin(), matches.end()), matches.end());
 
-    if (matches.empty())
-    {
-        cout << "\a"; // Ring bell if no matches
-        tabPressCount = 0;
-    }
-    else
-    {
-        string commonPrefix = longestCommonPrefix(matches);
-        
-        if (commonPrefix.length() > input.length())
-        {
-            cout << commonPrefix.substr(input.length());
-            input = commonPrefix;
-            tabPressCount = 0; // Reset counter after successful completion
-        }
-        else
-        {
-            if (tabPressCount == 1)
-            {
-                cout << "\a\n"; 
-                for (const string &cmd : matches)
+                if (matches.empty())
                 {
-                    cout << cmd << "  ";
+                    cout << "\a"; // Ring bell if no matches
+                    tabPressCount = 0;
                 }
-                cout << endl << "$ " << input;
-                tabPressCount = 0; 
-            }
-            else
-            {
-                cout << "\a";
-                tabPressCount++;
-            }
-        }
-    }
+                else
+                {
+                    string commonPrefix = longestCommonPrefix(matches);
+
+                    if (commonPrefix.length() > input.length())
+                    {
+                        cout << commonPrefix.substr(input.length());
+                        input = commonPrefix;
+                        tabPressCount = 0; // Reset counter after successful completion
+                    }
+                    else
+                    {
+                        if (tabPressCount == 1)
+                        {
+                            cout << "\a\n";
+                            for (const string &cmd : matches)
+                            {
+                                cout << cmd << "  ";
+                            }
+                            cout << endl
+                                 << "$ " << input;
+                            tabPressCount = 0;
+                        }
+                        else
+                        {
+                            cout << "\a";
+                            tabPressCount++;
+                        }
+                    }
+                }
             }
             else if (ch == 127)
             {
