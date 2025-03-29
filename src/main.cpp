@@ -11,6 +11,8 @@
 #include <sys/wait.h>
 #include <termios.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <cstring>
 
 using namespace std;
 
@@ -251,38 +253,52 @@ string findExecutable(const string &command)
 }
 
 // Execute external commands
-void executeExternal(const vector<string> &args)
-{
-    pid_t pid = fork();
+void executeExternal(vector<string> &args) {
+    int fd = -1;
+    bool redirect = false;
+    string filename;
 
-    if (pid == -1)
-    {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == ">" || args[i] == "1>") {
+            if (i + 1 < args.size()) {
+                filename = args[i + 1];
+                redirect = true;
+                args.erase(args.begin() + i, args.begin() + i + 2);
+            }
+            break;
+        }
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
         cerr << "Error: failed to fork process\n";
         return;
     }
 
-    if (pid == 0) // Child process
-    {
-        // Convert vector<string> to char* array for execvp
-        vector<char *> c_args;
-        for (const string &arg : args)
-        {
-            c_args.push_back(const_cast<char *>(arg.c_str()));
+    if (pid == 0) {
+        if (redirect) {
+            fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd == -1) {
+                cerr << "Error opening file: " << strerror(errno) << endl;
+                exit(EXIT_FAILURE);
+            }
+            dup2(fd, STDOUT_FILENO);
+            close(fd);
         }
-        c_args.push_back(nullptr); // Null-terminate the array
-
-        if (execvp(c_args[0], c_args.data()) == -1)
-        {
-            perror("Error");
+        
+        vector<char *> c_args;
+        for (const string &arg : args) c_args.push_back(const_cast<char *>(arg.c_str()));
+        c_args.push_back(nullptr);
+        if (execvp(c_args[0], c_args.data()) == -1) {
+            perror("execvp");
             exit(EXIT_FAILURE);
         }
-    }
-    else // Parent process
-    {
+    } else {
         int status;
-        waitpid(pid, &status, 0); // Wait for child to finish
+        waitpid(pid, &status, 0);
     }
 }
+
 
 // Finding Present working directory
 void pwd()
