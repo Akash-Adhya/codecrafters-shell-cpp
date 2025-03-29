@@ -144,70 +144,34 @@ vector<string> splitInput(const string &input)
     bool inQuotes = false;
     bool inSingleQuotes = false;
 
-    for (size_t i = 0; i < input.length(); ++i)
-    {
+    for (size_t i = 0; i < input.length(); ++i) {
         char ch = input[i];
-
-        if (inQuotes)
-        {
-            if (ch == '"')
-            {
-                inQuotes = false;
-            }
-            else if (ch == '\\' && i + 1 < input.length() && (input[i + 1] == '"' || input[i + 1] == '\\' || input[i + 1] == '$'))
-            {
-                arg += input[++i]; // Handle escape sequences
-            }
-            else
-            {
-                arg += ch;
-            }
-        }
-        else if (inSingleQuotes)
-        {
-            if (ch == '\'')
-            {
-                inSingleQuotes = false;
-            }
-            else
-            {
-                arg += ch;
-            }
-        }
-        else
-        {
-            if (isspace(ch))
-            {
-                if (!arg.empty())
-                {
+        if (inQuotes) {
+            if (ch == '"') inQuotes = false;
+            else arg += ch;
+        } else if (inSingleQuotes) {
+            if (ch == '\'' && i + 1 < input.length()) arg += input[++i];
+            else if (ch == '\'' && input[i + 1] == '\'') arg += '\'';
+            else if (ch == '\'') inSingleQuotes = false;
+            else arg += ch;
+        } else {
+            if (isspace(ch)) {
+                if (!arg.empty()) {
                     args.push_back(arg);
                     arg.clear();
                 }
-            }
-            else if (ch == '"')
-            {
-                inQuotes = true;
-            }
-            else if (ch == '\'')
-            {
-                inSingleQuotes = true;
-            }
-            else if (ch == '\\' && i < input.length() - 1)
-            {
-                arg += input[++i];
-            }
-            else
-            {
-                arg += ch;
-            }
+            } else if (ch == '"') inQuotes = true;
+            else if (ch == '\'' && i + 1 < input.length()) arg += input[++i];
+            else if (ch == '>') {
+                if (!arg.empty()) {
+                    args.push_back(arg);
+                    arg.clear();
+                }
+                args.push_back(">");
+            } else arg += ch;
         }
     }
-
-    if (!arg.empty())
-    {
-        args.push_back(arg);
-    }
-
+    if (!arg.empty()) args.push_back(arg);
     return args;
 }
 
