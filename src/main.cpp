@@ -254,48 +254,42 @@ string findExecutable(const string &command)
 
 // Execute external commands
 void executeExternal(vector<string> &args) {
-    int fd = -1;
-    bool redirect = false;
-    string filename;
-
+    int outFd = -1;
     for (size_t i = 0; i < args.size(); ++i) {
         if (args[i] == ">" || args[i] == "1>") {
             if (i + 1 < args.size()) {
-                filename = args[i + 1];
-                redirect = true;
+                outFd = open(args[i + 1].c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (outFd == -1) {
+                    perror("Failed to open file for writing");
+                    return;
+                }
                 args.erase(args.begin() + i, args.begin() + i + 2);
+                break;
+            } else {
+                cerr << "Syntax error: expected file after >\n";
+                return;
             }
-            break;
         }
     }
-
     pid_t pid = fork();
     if (pid == -1) {
-        cerr << "Error: failed to fork process\n";
+        perror("Fork failed");
         return;
     }
-
-    if (pid == 0) {
-        if (redirect) {
-            fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            if (fd == -1) {
-                cerr << "Error opening file: " << strerror(errno) << endl;
-                exit(EXIT_FAILURE);
-            }
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
+    if (pid == 0) { // Child process
+        if (outFd != -1) {
+            dup2(outFd, STDOUT_FILENO);
+            close(outFd);
         }
-        
         vector<char *> c_args;
-        for (const string &arg : args) c_args.push_back(const_cast<char *>(arg.c_str()));
+        for (string &arg : args) c_args.push_back(&arg[0]);
         c_args.push_back(nullptr);
-        if (execvp(c_args[0], c_args.data()) == -1) {
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        }
+        execvp(c_args[0], c_args.data());
+        perror("Execution failed");
+        exit(EXIT_FAILURE);
     } else {
-        int status;
-        waitpid(pid, &status, 0);
+        waitpid(pid, nullptr, 0);
+        if (outFd != -1) close(outFd);
     }
 }
 
